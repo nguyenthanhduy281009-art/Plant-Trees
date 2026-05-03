@@ -7,25 +7,30 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --primary: #2e7d32; --bg: #f1f8e9; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow: hidden; }
-        .box { background: white; padding: 40px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); width: 380px; text-align: center; }
-        .brand-name { font-size: 36px; font-weight: 900; color: var(--primary); margin-bottom: 25px; }
-        input { width: 100%; padding: 15px; border: 1.5px solid #eee; border-radius: 15px; margin-bottom: 15px; box-sizing: border-box; outline: none; background: #f9f9f9; }
-        button.main { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
-        .stats { display: flex; justify-content: space-between; margin: 20px 0; font-size: 14px; background: #f0f7f0; padding: 12px; border-radius: 12px; }
-        #tree-img { max-height: 180px; transition: 0.3s; margin: 20px 0; display: block; margin-left: auto; margin-right: auto; }
+        :root { --primary: #2e7d32; --bg: #f1f8e9; --accent: #0288d1; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .box { background: white; padding: 35px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.08); width: 380px; text-align: center; transition: all 0.5s ease; }
+        .brand-name { font-size: 34px; font-weight: 900; color: var(--primary); margin-bottom: 20px; }
+        input { width: 100%; padding: 14px; border: 1.5px solid #eee; border-radius: 12px; margin-bottom: 12px; outline: none; background: #f9f9f9; box-sizing: border-box; }
+        button.main { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button.main:disabled { background: #ccc; cursor: not-allowed; }
+        
+        /* Hiệu ứng rơi giọt nước */
+        @keyframes drop {
+            0% { transform: translateY(-50px); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(20px); opacity: 0; }
+        }
     </style>
 </head>
 <body>
 
 <div class="box" id="main-app">
-    <!-- Màn hình chờ lúc bắt đầu -->
-    <div id="loading">Đang tải hệ thống...</div>
+    <div id="loading">Đang tải...</div>
 </div>
 
 <script>
-// --- CẤU HÌNH FIREBASE ---
+// --- CẤU HÌNH ---
 const firebaseConfig = {
   apiKey: "AIzaSyAASOFywyAkx2G7ubR_XsODI1U2x7mSMpE",
   authDomain: "plantrees-b1d99.firebaseapp.com",
@@ -35,35 +40,26 @@ const firebaseConfig = {
   messagingSenderId: "208821406000",
   appId: "1:208821406000:web:b4fac89c9a2f65d739e0f5"
 };
-
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
-
 const ADMIN_EMAIL = "nguyenthanhduy281009@gmail.com";
 
-// --- ĐIỀU HƯỚNG CHÍNH ---
+// --- ĐIỀU HƯỚNG ---
 auth.onAuthStateChanged(user => {
-    const root = document.getElementById('main-app');
     if (user) {
-        if (user.email === ADMIN_EMAIL) {
-            renderAdminChoice();
-        } else {
-            renderGame();
-        }
+        if (user.email === ADMIN_EMAIL) renderAdminChoice();
+        else renderGameUI(user);
     } else {
         renderLogin();
     }
 });
-
-// --- CÁC GIAO DIỆN (RENDER) ---
 
 function renderLogin() {
     document.getElementById('main-app').innerHTML = `
         <div class="brand-name">Plantrees</div>
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="pass" placeholder="Mật khẩu">
-        <div id="err-msg" style="color:red; font-size:12px; margin-bottom:10px; display:none;"></div>
         <button class="main" onclick="doLogin()">ĐĂNG NHẬP</button>
     `;
 }
@@ -71,86 +67,97 @@ function renderLogin() {
 function renderAdminChoice() {
     document.getElementById('main-app').innerHTML = `
         <div class="brand-name">Chào Duy!</div>
-        <button class="main" onclick="renderGame()">VÀO VƯỜN CHƠI</button>
+        <button class="main" onclick="renderGameUI(auth.currentUser)">VÀO VƯỜN CHƠI</button>
         <button class="main" style="background:#444; margin-top:15px;" onclick="renderAdminPanel()">QUẢN LÝ CÂY</button>
         <p onclick="logout()" style="cursor:pointer; color:#ccc; font-size:12px; margin-top:20px;">Đăng xuất</p>
     `;
 }
 
-function renderGame() {
-    const user = auth.currentUser;
-    document.getElementById('main-app').innerHTML = `
-        <div class="brand-name">Plantrees</div>
-        <div class="stats">
-            <span>Chào: <b>${user.displayName || 'Duy'}</b></span>
-            <span>💧 <b id="u-water">0</b></span>
-        </div>
-        <img id="tree-img" src="https://cdn-icons-png.flaticon.com/512/628/628283.png">
-        <div style="font-size:11px; color:#aaa;">TỔNG SERVER</div>
-        <div id="global-water" style="font-size:32px; font-weight:900; color:var(--primary); margin-bottom:20px;">0</div>
-        <button class="main" style="background:#0288d1;" onclick="pour()">TƯỚI NƯỚC 💧</button>
-        <p onclick="logout()" style="cursor:pointer; color:#ccc; font-size:12px; margin-top:20px;">Đăng xuất</p>
-    `;
+// --- LOGIC GAME CỦA DUY ---
+async function renderGameUI(user) {
+    const appBox = document.getElementById('main-app');
+    appBox.style.width = "450px"; 
     
-    // Kích hoạt dữ liệu Realtime
-    db.ref('users/' + user.uid + '/waterLevel').on('value', s => document.getElementById('u-water').innerText = s.val() || 0);
+    appBox.innerHTML = `
+        <div class="brand-name">Plantrees Garden</div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px;">
+            <span>Người làm vườn: <b id="u-name">${user.displayName || 'Bạn'}</b></span>
+            <span>Đã tưới: <b id="u-water">0</b> lần</span>
+        </div>
+        <div id="tree-container" style="position: relative; height: 220px; margin: 20px 0; background: #fcfcfc; border-radius: 20px; display: flex; align-items: center; justify-content: center; border: 1px solid #f0f0f0;">
+            <img id="tree-img" src="https://cdn-icons-png.flaticon.com/512/628/628283.png" width="130" style="transition: 0.5s;">
+            <div id="water-effect" style="position: absolute; top: 20px; display: none; font-size: 40px;">💧</div>
+        </div>
+        <div id="total-stats" style="margin-bottom: 20px;">
+            <div style="font-size: 12px; color: #666;">TỔNG LƯỢT TƯỚI CẢ VƯỜN</div>
+            <div id="global-water" style="font-size: 34px; font-weight: 900; color: #2e7d32;">0</div>
+        </div>
+        <button class="main" onclick="pourWater()" id="btnWater" style="background: #0288d1;">TƯỚI NƯỚC 💧</button>
+        <div id="leaderboard" style="margin-top: 25px; text-align: left;">
+            <div style="font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 10px; color:#333;">BẢNG XẾP HẠNG</div>
+            <div id="list-rank" style="font-size: 13px; color:#555;">Đang tải...</div>
+        </div>
+        <button onclick="logout()" style="margin-top: 25px; background: none; border: none; color: #bbb; cursor: pointer; font-size: 11px;">Đăng xuất</button>
+    `;
+
+    // Listeners
+    db.ref('users/' + user.uid + '/waterLevel').on('value', s => {
+        document.getElementById('u-water').innerText = s.val() || 0;
+    });
     db.ref('global_stats/totalWater').on('value', s => {
         const total = s.val() || 0;
         document.getElementById('global-water').innerText = total;
-        updateTree(total);
+        updateTreeStage(total);
+    });
+    db.ref('users').orderByChild('waterLevel').limitToLast(5).on('value', snap => {
+        let html = ''; let players = [];
+        snap.forEach(child => { players.push(child.val()); });
+        players.reverse().forEach((p, i) => {
+            html += `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f9f9f9;">
+                <span>${i+1}. ${p.name || 'Người dùng'}</span>
+                <span style="font-weight: bold;">${p.waterLevel || 0} giọt</span>
+            </div>`;
+        });
+        document.getElementById('list-rank').innerHTML = html;
     });
 }
 
-function renderAdminPanel() {
-    document.getElementById('main-app').innerHTML = `
-        <div class="brand-name">Admin</div>
-        <input type="number" id="m-stone" placeholder="Mốc giọt">
-        <input type="text" id="m-url" placeholder="Link ảnh">
-        <button class="main" onclick="saveTree()">LƯU CÂY</button>
-        <div id="tree-list" style="margin-top:20px; text-align:left; font-size:11px; max-height:100px; overflow-y:auto;"></div>
-        <button onclick="renderAdminChoice()" style="background:none; border:none; color:var(--primary); cursor:pointer; margin-top:15px; width:100%;">Quay lại</button>
-    `;
+async function pourWater() {
+    const user = auth.currentUser;
+    const btn = document.getElementById('btnWater');
+    const effect = document.getElementById('water-effect');
+    btn.disabled = true;
+    effect.style.display = 'block';
+    effect.style.animation = 'drop 0.5s ease-in forwards';
+    
+    try {
+        await db.ref('users/' + user.uid + '/waterLevel').transaction(c => (c || 0) + 1);
+        await db.ref('global_stats/totalWater').transaction(c => (c || 0) + 1);
+    } catch(e) { console.error(e); }
+
+    setTimeout(() => { effect.style.display = 'none'; btn.disabled = false; }, 600);
 }
 
-// --- LOGIC HÀNH ĐỘNG ---
+function updateTreeStage(total) {
+    const img = document.getElementById('tree-img');
+    // Duy có thể giữ mốc cứng này hoặc dùng dữ liệu từ Admin Panel đã làm
+    if(total < 50) img.src = "https://cdn-icons-png.flaticon.com/512/628/628283.png";
+    else if(total < 200) img.src = "https://cdn-icons-png.flaticon.com/512/2921/2921134.png";
+    else img.src = "https://cdn-icons-png.flaticon.com/512/489/489969.png";
+}
+
+function renderAdminPanel() {
+    // Duy có thể thêm logic quản lý các mốc cây ở đây
+    alert("Khu vực quản lý các mốc cây!");
+}
 
 async function doLogin() {
     const e = document.getElementById('email').value;
     const p = document.getElementById('pass').value;
-    const err = document.getElementById('err-msg');
-    try {
-        await auth.signInWithEmailAndPassword(e, p);
-    } catch(e) {
-        err.innerText = e.message;
-        err.style.display = 'block';
-    }
+    try { await auth.signInWithEmailAndPassword(e, p); } catch(e) { alert(e.message); }
 }
 
-async function pour() {
-    const u = auth.currentUser;
-    await db.ref('users/' + u.uid + '/waterLevel').transaction(c => (c||0) + 1);
-    await db.ref('global_stats/totalWater').transaction(c => (c||0) + 1);
-}
-
-function updateTree(total) {
-    db.ref('tree_settings').once('value', s => {
-        let url = "https://cdn-icons-png.flaticon.com/512/628/628283.png";
-        let max = -1;
-        s.forEach(c => {
-            const mile = parseInt(c.key);
-            if(total >= mile && mile > max) { max = mile; url = c.val(); }
-        });
-        document.getElementById('tree-img').src = url;
-    });
-}
-
-function saveTree() {
-    const m = document.getElementById('m-stone').value;
-    const u = document.getElementById('m-url').value;
-    if(m && u) db.ref('tree_settings/' + m).set(u).then(() => alert("Xong!"));
-}
-
-function logout() { auth.signOut(); }
+function logout() { auth.signOut().then(() => location.reload()); }
 </script>
 </body>
 </html>
