@@ -1,26 +1,23 @@
 // --- CHỨC NĂNG GAME & ĐIỀU HƯỚNG ---
 function startApp() {
     const user = auth.currentUser;
-    const adminEmail = "nguyenthanhduy281009@gmail.com"; // THAY EMAIL CỦA BẠN VÀO ĐÂY
+    const adminEmail = "nguyenthanhduy281009@gmail.com"; 
 
     if (user.email === adminEmail) {
         showAdminChoice();
     } else {
-        enterGame();
+        showGameUI(); // Thay vì enterGame() dùng reload, ta gọi hàm hiện UI
     }
 }
 
 function showAdminChoice() {
-    // Ẩn màn hình Auth
     document.getElementById('auth-ui').style.display = 'none';
-    
-    // Tạo giao diện lựa chọn cho Admin
     const container = document.getElementById('app-container');
     container.innerHTML = `
-        <div class="brand-name">Xin chào Admin</div>
-        <p style="font-size: 14px; color: #666; margin-bottom: 30px;">Bạn muốn truy cập vào khu vực nào?</p>
+        <div class="brand-name">Xin chào Duy</div>
+        <p style="font-size: 14px; color: #666; margin-bottom: 30px;">Hôm nay bạn muốn làm gì?</p>
         
-        <button class="main" onclick="enterGame()" style="background: var(--primary); margin-bottom: 15px;">
+        <button class="main" onclick="showGameUI()" style="background: var(--primary); margin-bottom: 15px;">
             VÀO SERVER CHƠI GAME
         </button>
         
@@ -28,39 +25,35 @@ function showAdminChoice() {
             VÀO KHU QUẢN LÝ (ADMIN)
         </button>
 
-        <p onclick="location.reload()" style="font-size: 11px; color: #ccc; cursor: pointer; margin-top: 30px;">Đăng xuất</p>
+        <p onclick="logout()" style="font-size: 11px; color: #ccc; cursor: pointer; margin-top: 30px;">Đăng xuất</p>
     `;
 }
 
-function enterGame() {
-    // Chạy logic load game như cũ (hiện giao diện game-ui)
-    // Lưu ý: Nếu bạn dùng innerHTML để hiện lựa chọn Admin, hãy đảm bảo giao diện Game được vẽ lại hoặc ẩn/hiện đúng ID
-    location.reload(); // Cách đơn giản nhất để reset lại trạng thái và vào thẳng nếu đã lưu session
-}
-
-function goToAdminPanel() {
+// Hàm này để hiện giao diện Game (Server)
+function showGameUI() {
+    // Ẩn tất cả và chỉ hiện game-ui
+    document.getElementById('auth-ui').style.display = 'none';
     const container = document.getElementById('app-container');
+    
+    // Nếu bạn đã lỡ dùng innerHTML ghi đè container ở bước Admin, 
+    // ta cần nạp lại cấu trúc gốc của Game UI vào đây.
     container.innerHTML = `
-        <div class="brand-name">Hệ Thống Quản Trị</div>
-        <div style="text-align: left; margin-top: 20px;">
-            <label style="font-size: 12px;">Mốc giọt nước:</label>
-            <input type="number" id="adm-milestone" placeholder="VD: 500">
-            <label style="font-size: 12px;">Link ảnh cây:</label>
-            <input type="text" id="adm-url" placeholder="URL ảnh">
-            <button class="main" onclick="saveTreeData()">LƯU CẤU HÌNH</button>
-            <div id="admin-tree-list" style="margin-top: 20px; max-height: 200px; overflow-y: auto;"></div>
-            <button onclick="location.reload()" style="background:none; border:none; color:var(--primary); cursor:pointer; width:100%; margin-top:10px;">Quay lại</button>
+        <div class="brand-name">Plantrees</div>
+        <div class="stats-card">
+            <span>Vườn của: <b id="user-display">${auth.currentUser.displayName}</b></span>
+            <span>💧 <b id="user-water">0</b></span>
         </div>
+        <div id="tree-display"><img id="tree-img" src=""></div>
+        <div style="font-size: 11px; color: #aaa;">TỔNG GIỌT NƯỚC TOÀN CẦU</div>
+        <div id="global-water" style="font-size: 36px; font-weight: 900; color: var(--primary);">0</div>
+        <button class="main" onclick="pour()" style="background: #0288d1;">TƯỚI NƯỚC 💧</button>
+        <p onclick="logout()" style="font-size: 11px; color: #ccc; cursor: pointer; margin-top: 30px;">Đăng xuất</p>
     `;
-    loadAdminList(); // Gọi hàm load danh sách mốc đã có
+    
+    // Kích hoạt lại các listener Firebase
+    initGameLogic(); 
 }
 
-async function saveTreeData() {
-    const m = document.getElementById('adm-milestone').value;
-    const u = document.getElementById('adm-url').value;
-    if(m && u) {
-        await db.ref('tree_settings/' + m).set(u);
-        alert("Đã cập nhật!");
-        goToAdminPanel(); // Refresh lại danh sách
-    }
+function logout() {
+    auth.signOut().then(() => location.reload());
 }
