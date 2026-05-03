@@ -1,59 +1,154 @@
-// --- CHỨC NĂNG GAME & ĐIỀU HƯỚNG ---
-function startApp() {
-    const user = auth.currentUser;
-    const adminEmail = "nguyenthanhduy281009@gmail.com"; 
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root { --primary: #2e7d32; --bg: #f1f8e9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .box { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 360px; text-align: center; }
+        .brand-name { font-size: 32px; font-weight: 900; color: var(--primary); margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 12px; margin-bottom: 10px; box-sizing: border-box; outline: none; }
+        button.main { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        #tree-display { height: 200px; display: flex; align-items: center; justify-content: center; margin: 20px 0; background: #fafafa; border-radius: 15px; }
+        #tree-img { max-height: 150px; }
+        .stats-card { display: flex; justify-content: space-between; font-size: 13px; background: #f0f4f0; padding: 10px; border-radius: 10px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="box" id="app-container">
+    <!-- Màn hình Đăng nhập (Mặc định hiện đầu tiên) -->
+    <div id="auth-ui">
+        <div class="brand-name">Plantrees</div>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="pass" placeholder="Mật khẩu">
+        <button class="main" onclick="handleAuth()">ĐĂNG NHẬP</button>
+    </div>
+
+    <!-- Màn hình Game (Mặc định ẩn) -->
+    <div id="game-ui" style="display: none;">
+        <div class="brand-name">Vườn Cây</div>
+        <div class="stats-card">
+            <span>Chào: <b id="display-name">...</b></span>
+            <span>💧 <b id="user-water">0</b></span>
+        </div>
+        <div id="tree-display">
+            <img id="tree-img" src="">
+        </div>
+        <div style="font-size: 11px; color: #999;">TỔNG CẢ SERVER</div>
+        <div id="global-water" style="font-size: 32px; font-weight: 900; color: var(--primary);">0</div>
+        <button class="main" onclick="pour()">TƯỚI NƯỚC 💧</button>
+        <p onclick="logout()" style="font-size: 11px; color: #ccc; cursor: pointer; margin-top: 20px;">Đăng xuất</p>
+    </div>
+</div>
+
+<script>
+// Cấu hình Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyAASOFywyAkx2G7ubR_XsODI1U2x7mSMpE",
+  authDomain: "plantrees-b1d99.firebaseapp.com",
+  databaseURL: "https://plantrees-b1d99-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "plantrees-b1d99",
+  storageBucket: "plantrees-b1d99.firebasestorage.app",
+  messagingSenderId: "208821406000",
+  appId: "1:208821406000:web:b4fac89c9a2f65d739e0f5"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+// 1. Xử lý Đăng nhập
+async function handleAuth() {
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('pass').value;
+    try {
+        await auth.signInWithEmailAndPassword(email, pass);
+        // Sau khi signIn thành công, onAuthStateChanged bên dưới sẽ tự chạy startApp()
+    } catch(e) { alert("Lỗi: " + e.message); }
+}
+
+// 2. Kiểm tra quyền và Điều hướng
+function startApp(user) {
+    const adminEmail = "nguyenthanhduy281009@gmail.com";
 
     if (user.email === adminEmail) {
         showAdminChoice();
     } else {
-        showGameUI(); // Thay vì enterGame() dùng reload, ta gọi hàm hiện UI
+        showGameUI();
     }
 }
 
 function showAdminChoice() {
     document.getElementById('auth-ui').style.display = 'none';
-    const container = document.getElementById('app-container');
-    container.innerHTML = `
+    document.getElementById('app-container').innerHTML = `
         <div class="brand-name">Xin chào Duy</div>
-        <p style="font-size: 14px; color: #666; margin-bottom: 30px;">Hôm nay bạn muốn làm gì?</p>
-        
-        <button class="main" onclick="showGameUI()" style="background: var(--primary); margin-bottom: 15px;">
-            VÀO SERVER CHƠI GAME
-        </button>
-        
-        <button class="main" onclick="goToAdminPanel()" style="background: #444;">
-            VÀO KHU QUẢN LÝ (ADMIN)
-        </button>
-
-        <p onclick="logout()" style="font-size: 11px; color: #ccc; cursor: pointer; margin-top: 30px;">Đăng xuất</p>
+        <button class="main" onclick="showGameUI()">VÀO SERVER CHƠI GAME</button>
+        <button class="main" onclick="goToAdminPanel()" style="background: #444; margin-top: 15px;">VÀO KHU QUẢN LÝ</button>
+        <p onclick="logout()" style="font-size: 11px; color: #ccc; cursor: pointer; margin-top: 20px;">Đăng xuất</p>
     `;
 }
 
-// Hàm này để hiện giao diện Game (Server)
+// 3. Khởi động Giao diện Game
 function showGameUI() {
-    // Ẩn tất cả và chỉ hiện game-ui
     document.getElementById('auth-ui').style.display = 'none';
+    // Nếu là Admin vừa bấm nút, ta cần hiện lại khối game-ui gốc
     const container = document.getElementById('app-container');
+    if (container.innerHTML.includes('Xin chào Duy')) {
+        location.reload(); // Cách nhanh nhất để quay lại cấu hình chuẩn
+        return;
+    }
     
-    // Nếu bạn đã lỡ dùng innerHTML ghi đè container ở bước Admin, 
-    // ta cần nạp lại cấu trúc gốc của Game UI vào đây.
-    container.innerHTML = `
-        <div class="brand-name">Plantrees</div>
-        <div class="stats-card">
-            <span>Vườn của: <b id="user-display">${auth.currentUser.displayName}</b></span>
-            <span>💧 <b id="user-water">0</b></span>
-        </div>
-        <div id="tree-display"><img id="tree-img" src=""></div>
-        <div style="font-size: 11px; color: #aaa;">TỔNG GIỌT NƯỚC TOÀN CẦU</div>
-        <div id="global-water" style="font-size: 36px; font-weight: 900; color: var(--primary);">0</div>
-        <button class="main" onclick="pour()" style="background: #0288d1;">TƯỚI NƯỚC 💧</button>
-        <p onclick="logout()" style="font-size: 11px; color: #ccc; cursor: pointer; margin-top: 30px;">Đăng xuất</p>
-    `;
-    
-    // Kích hoạt lại các listener Firebase
-    initGameLogic(); 
+    document.getElementById('game-ui').style.display = 'block';
+    document.getElementById('display-name').innerText = auth.currentUser.displayName || "Bạn";
+    initGameLogic();
 }
 
-function logout() {
-    auth.signOut().then(() => location.reload());
+function initGameLogic() {
+    const user = auth.currentUser;
+    // Lắng nghe điểm cá nhân
+    db.ref('users/' + user.uid + '/waterLevel').on('value', s => {
+        document.getElementById('user-water').innerText = s.val() || 0;
+    });
+    // Lắng nghe điểm tổng và đổi ảnh cây
+    db.ref('global_stats/totalWater').on('value', s => {
+        const total = s.val() || 0;
+        document.getElementById('global-water').innerText = total;
+        updateTree(total);
+    });
 }
+
+async function pour() {
+    const uid = auth.currentUser.uid;
+    await db.ref('users/' + uid + '/waterLevel').transaction(c => (c||0) + 1);
+    await db.ref('global_stats/totalWater').transaction(c => (c||0) + 1);
+}
+
+function updateTree(total) {
+    db.ref('tree_settings').once('value', s => {
+        let url = "https://cdn-icons-png.flaticon.com/512/628/628283.png";
+        let maxMile = -1;
+        s.forEach(child => {
+            const mile = parseInt(child.key);
+            if(total >= mile && mile > maxMile) {
+                maxMile = mile;
+                url = child.val();
+            }
+        });
+        document.getElementById('tree-img').src = url;
+    });
+}
+
+function logout() { auth.signOut().then(() => location.reload()); }
+
+// Theo dõi trạng thái đăng nhập
+auth.onAuthStateChanged(user => {
+    if (user) startApp(user);
+});
+</script>
+</body>
+</html>
