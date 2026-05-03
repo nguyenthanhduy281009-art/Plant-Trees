@@ -8,29 +8,24 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         :root { --primary: #2e7d32; --bg: #f1f8e9; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .box { background: white; padding: 40px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); width: 380px; text-align: center; transition: 0.3s; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow: hidden; }
+        .box { background: white; padding: 40px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); width: 380px; text-align: center; }
         .brand-name { font-size: 36px; font-weight: 900; color: var(--primary); margin-bottom: 25px; }
         input { width: 100%; padding: 15px; border: 1.5px solid #eee; border-radius: 15px; margin-bottom: 15px; box-sizing: border-box; outline: none; background: #f9f9f9; }
         button.main { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
         .stats { display: flex; justify-content: space-between; margin: 20px 0; font-size: 14px; background: #f0f7f0; padding: 12px; border-radius: 12px; }
-        #tree-img { max-height: 180px; transition: 0.3s; margin: 20px 0; }
+        #tree-img { max-height: 180px; transition: 0.3s; margin: 20px 0; display: block; margin-left: auto; margin-right: auto; }
     </style>
 </head>
 <body>
 
-<div class="box" id="main-container">
-    <!-- Mặc định sẽ nạp màn hình Auth -->
-    <div id="auth-screen">
-        <div class="brand-name">Plantrees</div>
-        <input type="email" id="email" placeholder="Email của bạn">
-        <input type="password" id="pass" placeholder="Mật khẩu">
-        <div id="status" style="margin-bottom: 15px; font-size: 13px; color: #2e7d32; display: none;">Đang kiểm tra...</div>
-        <button class="main" onclick="doLogin()">ĐĂNG NHẬP</button>
-    </div>
+<div class="box" id="main-app">
+    <!-- Màn hình chờ lúc bắt đầu -->
+    <div id="loading">Đang tải hệ thống...</div>
 </div>
 
 <script>
+// --- CẤU HÌNH FIREBASE ---
 const firebaseConfig = {
   apiKey: "AIzaSyAASOFywyAkx2G7ubR_XsODI1U2x7mSMpE",
   authDomain: "plantrees-b1d99.firebaseapp.com",
@@ -47,22 +42,9 @@ const db = firebase.database();
 
 const ADMIN_EMAIL = "nguyenthanhduy281009@gmail.com";
 
-// 1. Hàm đăng nhập
-async function doLogin() {
-    const e = document.getElementById('email').value;
-    const p = document.getElementById('pass').value;
-    const s = document.getElementById('status');
-    s.style.display = 'block';
-    try {
-        await auth.signInWithEmailAndPassword(e, p);
-    } catch(err) {
-        s.innerText = "Lỗi: " + err.message;
-        s.style.color = "red";
-    }
-}
-
-// 2. Theo dõi trạng thái - Đây là "trạm điều hướng"
+// --- ĐIỀU HƯỚNG CHÍNH ---
 auth.onAuthStateChanged(user => {
+    const root = document.getElementById('main-app');
     if (user) {
         if (user.email === ADMIN_EMAIL) {
             renderAdminChoice();
@@ -70,38 +52,47 @@ auth.onAuthStateChanged(user => {
             renderGame();
         }
     } else {
-        // Nếu logout thì nạp lại form đăng nhập (hoặc location.reload)
+        renderLogin();
     }
 });
 
-// 3. Giao diện lựa chọn cho Admin
+// --- CÁC GIAO DIỆN (RENDER) ---
+
+function renderLogin() {
+    document.getElementById('main-app').innerHTML = `
+        <div class="brand-name">Plantrees</div>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="pass" placeholder="Mật khẩu">
+        <div id="err-msg" style="color:red; font-size:12px; margin-bottom:10px; display:none;"></div>
+        <button class="main" onclick="doLogin()">ĐĂNG NHẬP</button>
+    `;
+}
+
 function renderAdminChoice() {
-    document.getElementById('main-container').innerHTML = `
+    document.getElementById('main-app').innerHTML = `
         <div class="brand-name">Chào Duy!</div>
-        <p style="color:#666; margin-bottom:30px;">Bạn muốn truy cập vào đâu?</p>
-        <button class="main" onclick="renderGame()">VÀO SERVER CHƠI GAME</button>
-        <button class="main" style="background:#444; margin-top:15px;" onclick="renderAdminPanel()">VÀO KHU QUẢN LÝ</button>
+        <button class="main" onclick="renderGame()">VÀO VƯỜN CHƠI</button>
+        <button class="main" style="background:#444; margin-top:15px;" onclick="renderAdminPanel()">QUẢN LÝ CÂY</button>
         <p onclick="logout()" style="cursor:pointer; color:#ccc; font-size:12px; margin-top:20px;">Đăng xuất</p>
     `;
 }
 
-// 4. Giao diện Game chính
 function renderGame() {
     const user = auth.currentUser;
-    document.getElementById('main-container').innerHTML = `
+    document.getElementById('main-app').innerHTML = `
         <div class="brand-name">Plantrees</div>
         <div class="stats">
-            <span>Người chơi: <b>${user.displayName || 'Bạn'}</b></span>
+            <span>Chào: <b>${user.displayName || 'Duy'}</b></span>
             <span>💧 <b id="u-water">0</b></span>
         </div>
         <img id="tree-img" src="https://cdn-icons-png.flaticon.com/512/628/628283.png">
-        <div style="font-size:12px; color:#aaa;">TỔNG CẢ SERVER</div>
+        <div style="font-size:11px; color:#aaa;">TỔNG SERVER</div>
         <div id="global-water" style="font-size:32px; font-weight:900; color:var(--primary); margin-bottom:20px;">0</div>
         <button class="main" style="background:#0288d1;" onclick="pour()">TƯỚI NƯỚC 💧</button>
         <p onclick="logout()" style="cursor:pointer; color:#ccc; font-size:12px; margin-top:20px;">Đăng xuất</p>
     `;
     
-    // Bắt đầu đồng bộ Realtime
+    // Kích hoạt dữ liệu Realtime
     db.ref('users/' + user.uid + '/waterLevel').on('value', s => document.getElementById('u-water').innerText = s.val() || 0);
     db.ref('global_stats/totalWater').on('value', s => {
         const total = s.val() || 0;
@@ -110,38 +101,35 @@ function renderGame() {
     });
 }
 
-// 5. Giao diện Quản lý (Admin Panel)
 function renderAdminPanel() {
-    document.getElementById('main-container').innerHTML = `
-        <div class="brand-name">Quản Lý Cây</div>
-        <input type="number" id="m-stone" placeholder="Mốc giọt nước">
-        <input type="text" id="m-url" placeholder="Link ảnh cây">
-        <button class="main" onclick="saveTree()">LƯU CẤU HÌNH</button>
-        <div id="tree-list" style="margin-top:20px; text-align:left; font-size:12px; max-height:150px; overflow-y:auto;"></div>
+    document.getElementById('main-app').innerHTML = `
+        <div class="brand-name">Admin</div>
+        <input type="number" id="m-stone" placeholder="Mốc giọt">
+        <input type="text" id="m-url" placeholder="Link ảnh">
+        <button class="main" onclick="saveTree()">LƯU CÂY</button>
+        <div id="tree-list" style="margin-top:20px; text-align:left; font-size:11px; max-height:100px; overflow-y:auto;"></div>
         <button onclick="renderAdminChoice()" style="background:none; border:none; color:var(--primary); cursor:pointer; margin-top:15px; width:100%;">Quay lại</button>
     `;
-    
-    db.ref('tree_settings').on('value', s => {
-        let h = '';
-        s.forEach(c => h += `<div style="padding:5px; border-bottom:1px solid #eee;">Mốc ${c.key}: <a href="${c.val()}" target="_blank">Xem ảnh</a></div>`);
-        document.getElementById('tree-list').innerHTML = h;
-    });
 }
 
-// --- CÁC HÀM XỬ LÝ DỮ LIỆU ---
+// --- LOGIC HÀNH ĐỘNG ---
+
+async function doLogin() {
+    const e = document.getElementById('email').value;
+    const p = document.getElementById('pass').value;
+    const err = document.getElementById('err-msg');
+    try {
+        await auth.signInWithEmailAndPassword(e, p);
+    } catch(e) {
+        err.innerText = e.message;
+        err.style.display = 'block';
+    }
+}
+
 async function pour() {
     const u = auth.currentUser;
-    const img = document.getElementById('tree-img');
-    img.style.transform = "scale(1.1)";
-    setTimeout(() => img.style.transform = "scale(1)", 200);
     await db.ref('users/' + u.uid + '/waterLevel').transaction(c => (c||0) + 1);
     await db.ref('global_stats/totalWater').transaction(c => (c||0) + 1);
-}
-
-function saveTree() {
-    const m = document.getElementById('m-stone').value;
-    const u = document.getElementById('m-url').value;
-    if(m && u) db.ref('tree_settings/' + m).set(u).then(() => alert("Đã lưu!"));
 }
 
 function updateTree(total) {
@@ -156,7 +144,13 @@ function updateTree(total) {
     });
 }
 
-function logout() { auth.signOut().then(() => location.reload()); }
+function saveTree() {
+    const m = document.getElementById('m-stone').value;
+    const u = document.getElementById('m-url').value;
+    if(m && u) db.ref('tree_settings/' + m).set(u).then(() => alert("Xong!"));
+}
+
+function logout() { auth.signOut(); }
 </script>
 </body>
 </html>
