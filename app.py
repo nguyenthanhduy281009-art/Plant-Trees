@@ -126,5 +126,5 @@ async function handleAuth() {
 </html>
 """
 
-# Hiển thị HTML trong Streamlit
-components.html(html_code, height=600)
+# Thay dòng cũ bằng dòng này
+components.html(html_code, height=1000, scrolling=True)
