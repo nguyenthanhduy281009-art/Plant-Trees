@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - Plantrees Manager</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
+        .admin-box { background: white; padding: 20px; border-radius: 12px; max-width: 500px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #2ecc71; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .plant-list { margin-top: 20px; }
+        .item { background: #eee; padding: 10px; margin-top: 5px; border-radius: 5px; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+<div class="admin-box">
+    <h2>🍀 QUẢN LÝ CÂY TRỒNG</h2>
+    <input type="number" id="p_level" placeholder="Cấp độ (Level)">
+    <input type="text" id="p_img" placeholder="Link ảnh hoặc Emoji cây">
+    <input type="number" id="p_water" placeholder="Số lần tưới để đạt Level này">
+    <button onclick="addPlant()">THÊM / CẬP NHẬT CÂY</button>
+
+    <div class="plant-list" id="list">
+        <!-- Danh sách cây sẽ hiện ở đây -->
+    </div>
+</div>
+
+<script>
+    // Duy dùng config Firebase của Duy ở đây nhé
+    const firebaseConfig = { /* CONFIG CỦA DUY */ };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Hàm thêm cây vào Database
+    function addPlant() {
+        const lv = document.getElementById("p_level").value;
+        const img = document.getElementById("p_img").value;
+        const water = document.getElementById("p_water").value;
+
+        if(!lv || !img || !water) return alert("Nhập đủ thông tin Duy ơi!");
+
+        db.ref('settings/plants/lv' + lv).set({
+            level: parseInt(lv),
+            image: img,
+            required_water: parseInt(water)
+        }).then(() => {
+            alert("Đã cập nhật cây level " + lv);
+            location.reload();
+        });
+    }
+
+    // Hiển thị danh sách cây hiện có
+    db.ref('settings/plants').on('value', (snap) => {
+        const listDiv = document.getElementById("list");
+        listDiv.innerHTML = "<h4>Danh sách Level hiện tại:</h4>";
+        snap.forEach(child => {
+            const p = child.val();
+            listDiv.innerHTML += `
+                <div class="item">
+                    <span><b>LV ${p.level}:</b> ${p.image}</span>
+                    <span>💧 ${p.required_water} lần</span>
+                </div>`;
+        });
+    });
+</script>
+</body>
+</html>
