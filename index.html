@@ -37,6 +37,21 @@
         .nav-link i { font-size: 22px; }
         .nav-link span { font-size: 10px; font-weight: 800; text-transform: uppercase; }
         .nav-link.active { color: #2e7d32; transform: translateY(-3px); }
+        .watering-anim {
+    position: absolute;
+    font-size: 45px;
+    top: -20px;
+    right: -20px;
+    opacity: 0;
+    transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+    z-index: 10;
+}
+.watering-anim.active {
+    opacity: 1;
+    transform: translate(-60px, 40px) rotate(-40deg);
+}
+#tree-container { position: relative; }
     </style>
 </head>
 <body>
@@ -230,39 +245,60 @@ function renderPlant(totalGlobal) {
    async function pourWater() {
     const uid = auth.currentUser.uid;
     const btn = document.getElementById('btnPour');
+    const container = document.getElementById('tree-container');
     
-    // 1. Kiểm tra ngay lập tức nếu dữ liệu chưa tải xong hoặc không có nước
+    // 1. Kiểm tra nước
     if (!userData || userData.currentWater === undefined || userData.currentWater <= 0) {
         btn.disabled = true;
         return;
     }
 
-    btn.disabled = true; // Vô hiệu hóa nút ngay khi bấm để tránh spam
+    btn.disabled = true; // Khóa nút ngay lập tức
 
-    try {
-        const updates = {};
-        updates['global/totalWater'] = firebase.database.ServerValue.increment(1);
-        updates[`users/${uid}/currentWater`] = firebase.database.ServerValue.increment(-1);
-        updates[`users/${uid}/waterLevel`] = firebase.database.ServerValue.increment(1);
+    // 2. Tạo bình nước ảo
+    const can = document.createElement('div');
+    can.className = 'watering-anim';
+    can.innerHTML = '🚿'; // Duy có thể đổi thành 🏺 hoặc 💧 tùy ý
+    container.appendChild(can);
 
-        // Cập nhật mốc thời gian hồi nước nếu bình đang đầy mà bị trừ đi
-        if (userData.currentWater === userData.maxWater) {
-            updates[`users/${uid}/lastRegenTime`] = Date.now();
+    // Bắt đầu diễn hoạt bình nước bay vào
+    setTimeout(() => can.classList.add('active'), 50);
+
+    // 3. Đợi diễn hoạt xong (800ms) rồi mới cập nhật dữ liệu
+    setTimeout(async () => {
+        try {
+            const updates = {};
+            updates['global/totalWater'] = firebase.database.ServerValue.increment(1);
+            updates[`users/${uid}/currentWater`] = firebase.database.ServerValue.increment(-1);
+            updates[`users/${uid}/waterLevel`] = firebase.database.ServerValue.increment(1);
+
+            if (userData.currentWater === userData.maxWater) {
+                updates[`users/${uid}/lastRegenTime`] = Date.now();
+            }
+
+            await db.ref().update(updates);
+            
+            // Hiệu ứng rung cây (áp dụng cho cả ảnh và emoji)
+            const treeDisplay = document.getElementById('tree-display');
+            if(treeDisplay) {
+                treeDisplay.style.transform = "scale(1.1) rotate(5deg)";
+                setTimeout(() => treeDisplay.style.transform = "scale(1) rotate(0deg)", 200);
+            }
+
+        } catch(e) {
+            console.error("Lỗi tưới nước:", e);
+        } finally {
+            // 4. Thu hồi bình nước và mở lại nút nếu còn nước
+            can.classList.remove('active');
+            setTimeout(() => {
+                can.remove();
+                // Chỉ mở lại nút nếu người dùng vẫn còn nước để tưới tiếp
+                if (userData.currentWater > 0) {
+                    btn.disabled = false;
+                }
+            }, 400);
         }
-
-        await db.ref().update(updates);
-        
-        // Tạo hiệu ứng rung cây khi tưới thành công
-        const treeImg = document.querySelector('#tree-container img');
-        if(treeImg) {
-            treeImg.style.transform = "scale(1.1) rotate(5deg)";
-            setTimeout(() => treeImg.style.transform = "scale(1) rotate(0deg)", 200);
-        }
-
-    } catch(e) {
-        console.error("Lỗi tưới nước:", e);
-        btn.disabled = false;
-    }
+    }, 800); // Tổng thời gian chờ tưới là 0.8 giây
 }
 
     async function upgrade(type) {
