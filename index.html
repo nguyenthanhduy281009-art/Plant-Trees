@@ -56,12 +56,23 @@
 </div>
 
 <div class="main-garden">
-    <div class="global-counter">
-        <div style="font-size: 10px; font-weight: bold; color: #888;">THẾ GIỚI ĐÃ TƯỚI</div>
-        <div class="total-number" id="global-count">0</div>
+    <div id="tree-container" style="text-align: center; margin-top: 20px;">
+        <div id="tree-display" style="font-size: 80px; min-height: 220px; transition: transform 0.2s; display: flex; align-items: center; justify-content: center;">
+            </div>
+        
+        <div id="growth-info" style="margin-top: 10px;">
+            <div id="stage-name" style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 5px;">Đang tải...</div>
+            
+            <div style="width: 200px; height: 15px; background: #e0e0e0; border-radius: 10px; margin: auto; overflow: hidden; border: 1px solid #ccc;">
+                <div id="progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); transition: width 0.5s;"></div>
+            </div>
+            
+            <div id="water-ratio" style="font-size: 12px; margin-top: 5px; color: #666; font-weight: bold;">0/0</div>
+        </div>
     </div>
-    <div id="tree-display">🌱</div>
-    <div id="regen-text" style="font-size: 11px; color: #999; margin-bottom: 10px;">--:--</div>
+
+    <div id="regen-text" style="font-size: 11px; color: #999; margin-top: 15px; margin-bottom: 10px;">--:--</div>
+    
     <div class="action-cluster">
         <button class="pour-btn" id="btnPour" onclick="pourWater()">TƯỚI NƯỚC 💧</button>
         <div class="upgrade-row">
@@ -99,7 +110,6 @@
     auth.onAuthStateChanged(user => {
         if (user) {
             listenToUser(user.uid);
-            listenToGlobal();
             loadPlantSettings();
         } else { window.location.href = "auth.html"; }
     });
@@ -131,23 +141,74 @@
         });
     }
 
-    function listenToGlobal() {
-        db.ref('global/totalWater').on('value', s => {
-            const total = s.val() || 0;
-            document.getElementById('global-count').innerText = total.toLocaleString();
-            updateTreeVisuals(total);
-        });
+    let allPlants = [];
+
+// 1. Lấy danh sách cây từ Admin Duy đã nhập
+db.ref('settings/plants_v2').on('value', (snapshot) => {
+    if (!snapshot.exists()) return;
+    allPlants = [];
+    snapshot.forEach(child => {
+        allPlants.push(child.val());
+    });
+    // Lấy lại dữ liệu nước để vẽ lại ngay khi admin đổi cây
+    db.ref('global/totalWater').once('value', (snap) => {
+        renderPlant(snap.val() || 0);
+    });
+});
+
+// 2. Theo dõi tổng số nước của Thế giới
+db.ref('global/totalWater').on('value', (snapshot) => {
+    const totalGlobalWater = snapshot.val() || 0;
+    renderPlant(totalGlobalWater);
+});
+
+function renderPlant(totalGlobal) {
+    if (allPlants.length === 0) return;
+
+    let waterPool = totalGlobal;
+    let currentPlant = null;
+    let currentStage = null;
+    let stageRequired = 0;
+    let stageCurrent = 0;
+
+    for (let i = 0; i < allPlants.length; i++) {
+        let plant = allPlants[i];
+        let plantTotalWater = plant.stages.reduce((sum, st) => sum + st.required_water, 0);
+
+        if (waterPool < plantTotalWater || i === allPlants.length - 1) {
+            currentPlant = plant;
+            for (let j = 0; j < plant.stages.length; j++) {
+                let st = plant.stages[j];
+                if (waterPool < st.required_water || j === plant.stages.length - 1) {
+                    currentStage = st;
+                    stageRequired = st.required_water;
+                    stageCurrent = waterPool;
+                    break;
+                } else {
+                    waterPool -= st.required_water;
+                }
+            }
+            break;
+        } else {
+            waterPool -= plantTotalWater;
+        }
     }
 
-    function updateTreeVisuals(total) {
-        const waterPerCycle = 1000;
-        const currentProgress = total % waterPerCycle;
-        let currentImg = "🌱";
-        plantSettings.forEach(p => { if (currentProgress >= p.required_water) currentImg = p.image; });
-        const container = document.getElementById('tree-display');
-        container.innerHTML = currentImg.includes('http') ? `<img src="${currentImg}">` : `<span>${currentImg}</span>`;
-    }
+    // 3. Hiển thị lên màn hình (Khớp với cái HTML Tree-container của Duy)
+    if (currentPlant && currentStage) {
+        const display = document.getElementById('tree-display');
+        if (currentStage.image.includes('http')) {
+            display.innerHTML = `<img src="${currentStage.image}" style="height:200px; object-fit:contain;">`;
+        } else {
+            display.innerText = currentStage.image;
+        }
 
+        document.getElementById('stage-name').innerText = currentPlant.name;
+        const percent = Math.min((stageCurrent / stageRequired) * 100, 100);
+        document.getElementById('progress-bar').style.width = percent + "%";
+        document.getElementById('water-ratio').innerText = `${stageCurrent} / ${stageRequired}`;
+    }
+}
     function startRegenLogic(uid, curW, maxW, speed) {
         if (regenInterval) clearInterval(regenInterval);
         regenInterval = setInterval(() => {
