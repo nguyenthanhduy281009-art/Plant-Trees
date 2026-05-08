@@ -1,69 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <title>Admin - Plantrees Manager</title>
+    <meta charset="UTF-8">
+    <title>Admin - Quản Lý Cây Trồng</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
-        .admin-box { background: white; padding: 20px; border-radius: 12px; max-width: 500px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #2ecc71; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .plant-list { margin-top: 20px; }
-        .item { background: #eee; padding: 10px; margin-top: 5px; border-radius: 5px; display: flex; justify-content: space-between; }
+        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
+        .login-box { max-width: 300px; margin: 100px auto; text-align: center; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .admin-panel { display: none; max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        .plant-card { border: 2px solid #e0e0e0; padding: 15px; margin-bottom: 20px; border-radius: 10px; background: #fafafa; }
+        .stage-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background: #eee; padding: 10px; border-radius: 5px; }
+        input { padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-add { background: #2e7d32; color: white; }
+        .btn-save { background: #0288d1; color: white; width: 100%; margin-top: 20px; font-size: 16px; }
+        .btn-del { background: #d32f2f; color: white; padding: 5px 10px; }
     </style>
 </head>
 <body>
 
-<div class="admin-box">
-    <h2>🍀 QUẢN LÝ CÂY TRỒNG</h2>
-    <input type="number" id="p_level" placeholder="Cấp độ (Level)">
-    <input type="text" id="p_img" placeholder="Link ảnh hoặc Emoji cây">
-    <input type="number" id="p_water" placeholder="Số lần tưới để đạt Level này">
-    <button onclick="addPlant()">THÊM / CẬP NHẬT CÂY</button>
+<div id="login-section" class="login-box">
+    <h3>Nhập mã Admin</h3>
+    <input type="password" id="admin-pass" placeholder="Mật khẩu...">
+    <button class="btn btn-add" style="margin-top:10px" onclick="checkPass()">Vào hệ thống</button>
+</div>
 
-    <div class="plant-list" id="list">
-        <!-- Danh sách cây sẽ hiện ở đây -->
-    </div>
+<div id="admin-section" class="admin-panel">
+    <h2>Quản lý danh sách cây</h2>
+    <div id="plant-list"></div>
+    <button class="btn btn-add" onclick="addNewPlant()">+ Thêm loại cây mới</button>
+    <button class="btn btn-save" onclick="saveToFirebase()">LƯU TẤT CẢ LÊN CLOUD ☁️</button>
 </div>
 
 <script>
-    // Duy dùng config Firebase của Duy ở đây nhé
-    const firebaseConfig = { /* CONFIG CỦA DUY */ };
+    // Dán Config Firebase của Duy vào đây
+    const firebaseConfig = {
+        apiKey: "AIzaSyAASOFywyAkx2G7ubR_XsODI1U2x7mSMpE",
+        authDomain: "plantrees-b1d99.firebaseapp.com",
+        databaseURL: "https://plantrees-b1d99-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "plantrees-b1d99",
+        storageBucket: "plantrees-b1d99.firebasestorage.app",
+        messagingSenderId: "208821406000",
+        appId: "1:208821406000:web:b4fac89c9a2f65d739e0f5"
+    };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Hàm thêm cây vào Database
-    function addPlant() {
-        const lv = document.getElementById("p_level").value;
-        const img = document.getElementById("p_img").value;
-        const water = document.getElementById("p_water").value;
-
-        if(!lv || !img || !water) return alert("Nhập đủ thông tin Duy ơi!");
-
-        db.ref('settings/plants/lv' + lv).set({
-            level: parseInt(lv),
-            image: img,
-            required_water: parseInt(water)
-        }).then(() => {
-            alert("Đã cập nhật cây level " + lv);
-            location.reload();
-        });
+    function checkPass() {
+        const pass = document.getElementById('admin-pass').value;
+        if(pass === "829135") {
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('admin-section').style.display = 'block';
+            loadCurrentData();
+        } else { alert("Sai mật khẩu rồi Duy ơi!"); }
     }
 
-    // Hiển thị danh sách cây hiện có
-    db.ref('settings/plants').on('value', (snap) => {
-        const listDiv = document.getElementById("list");
-        listDiv.innerHTML = "<h4>Danh sách Level hiện tại:</h4>";
-        snap.forEach(child => {
-            const p = child.val();
-            listDiv.innerHTML += `
-                <div class="item">
-                    <span><b>LV ${p.level}:</b> ${p.image}</span>
-                    <span>💧 ${p.required_water} lần</span>
-                </div>`;
+    function addNewPlant() {
+        const id = Date.now();
+        const html = `
+            <div class="plant-card" id="plant-${id}">
+                <input type="text" placeholder="Tên cây (Ví dụ: Cây Ổi)" class="p-name" style="width:90%; margin-bottom:10px; font-weight:bold;">
+                <div class="stages-container"></div>
+                <button class="btn btn-add" onclick="addStage('${id}')">+ Thêm giai đoạn</button>
+                <button class="btn btn-del" onclick="document.getElementById('plant-${id}').remove()">Xóa cây</button>
+            </div>`;
+        document.getElementById('plant-list').insertAdjacentHTML('beforeend', html);
+    }
+
+    function addStage(plantId, img = '', water = '') {
+        const container = document.querySelector(`#plant-${plantId} .stages-container`);
+        const html = `
+            <div class="stage-row">
+                <span>Ảnh:</span><input type="text" placeholder="Link ảnh (http...)" class="s-img" value="${img}" style="flex:2">
+                <span>Nước:</span><input type="number" placeholder="Số giọt" class="s-water" value="${water}" style="flex:1">
+                <button class="btn btn-del" onclick="this.parentElement.remove()">X</button>
+            </div>`;
+        container.insertAdjacentHTML('beforeend', html);
+    }
+
+    async function saveToFirebase() {
+        const plants = [];
+        document.querySelectorAll('.plant-card').forEach(card => {
+            const stages = [];
+            card.querySelectorAll('.stage-row').forEach(row => {
+                stages.push({
+                    image: row.querySelector('.s-img').value,
+                    required_water: parseInt(row.querySelector('.s-water').value)
+                });
+            });
+            plants.push({
+                name: card.querySelector('.p-name').value,
+                stages: stages
+            });
         });
-    });
+
+        await db.ref('settings/plants_v2').set(plants);
+        alert("Đã lưu thành công! Game sẽ tự cập nhật cây mới.");
+    }
+
+    function loadCurrentData() {
+        db.ref('settings/plants_v2').once('value', s => {
+            if(!s.exists()) return;
+            s.val().forEach(p => {
+                const id = Date.now() + Math.random();
+                addNewPlant();
+                const lastPlant = document.getElementById('plant-list').lastElementChild;
+                lastPlant.id = `plant-${id}`;
+                lastPlant.querySelector('.p-name').value = p.name;
+                p.stages.forEach(st => addStage(id, st.image, st.required_water));
+            });
+        });
+    }
 </script>
 </body>
 </html>
