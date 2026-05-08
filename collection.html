@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plantrees - Danh Sách Cây</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #2e7d32; --bg: #f1f8e9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; text-align: center; }
+        
+        h1 { font-family: 'Luckiest Guy'; color: var(--primary); margin-bottom: 20px; }
+
+        /* Lưới hiển thị danh sách cây */
+        .plants-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            max-width: 500px;
+            margin: auto;
+            padding-bottom: 100px;
+        }
+
+        .plant-card {
+            background: white;
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border: 2px solid transparent;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        .plant-card:hover { border-color: var(--primary); }
+
+        .plant-img-box {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+        .plant-img-box img { max-height: 100%; max-width: 100%; object-fit: contain; }
+
+        .plant-info b { color: var(--primary); display: block; font-size: 16px; }
+        .plant-info span { font-size: 12px; color: #888; font-weight: bold; }
+
+        /* Nút quay lại */
+        .back-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-family: 'Luckiest Guy';
+            box-shadow: 0 4px 0 #1b5e20;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        /* Hiệu ứng Pop-up xem chi tiết giai đoạn */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 25px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .stage-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+        .stage-img { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+        .stage-img img { width: 100%; height: 100%; object-fit: contain; }
+    </style>
+</head>
+<body>
+
+<h1>BỘ SƯU TẬP CÂY</h1>
+
+<div class="plants-grid" id="plants-list">
+    </div>
+
+<div id="plantModal" class="modal" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h2 id="modal-title" style="color: var(--primary); font-family: 'Luckiest Guy';"></h2>
+        <div id="modal-stages"></div>
+        <button class="back-btn" style="position: static; transform: none; margin-top: 20px; width: 100%;" onclick="closeModal()">ĐÓNG</button>
+    </div>
+</div>
+
+<button class="back-btn" onclick="location.href='garden.html'">QUAY LẠI VƯỜN</button>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAASOFywyAkx2G7ubR_XsODI1U2x7mSMpE",
+        authDomain: "plantrees-b1d99.firebaseapp.com",
+        databaseURL: "https://plantrees-b1d99-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "plantrees-b1d99",
+        storageBucket: "plantrees-b1d99.firebasestorage.app",
+        messagingSenderId: "208821406000",
+        appId: "1:208821406000:web:b4fac89c9a2f65d739e0f5"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let allPlants = [];
+    let totalGlobalWater = 0;
+
+    // 1. Lấy dữ liệu nước toàn cầu
+    db.ref('global/totalWater').on('value', (snap) => {
+        totalGlobalWater = snap.val() || 0;
+        loadPlants();
+    });
+
+    // 2. Lấy danh sách cây
+    function loadPlants() {
+        db.ref('settings/plants_v2').once('value', (snapshot) => {
+            if (!snapshot.exists()) return;
+            allPlants = [];
+            snapshot.forEach(child => { allPlants.push(child.val()); });
+            renderGrid();
+        });
+    }
+
+    function renderGrid() {
+        const grid = document.getElementById('plants-list');
+        grid.innerHTML = '';
+        let waterPool = totalGlobalWater;
+
+        allPlants.forEach(plant => {
+            const plantTotalWater = plant.stages.reduce((sum, st) => sum + st.required_water, 0);
+            
+            // Nếu cây này đã được hoàn thành (nước vượt qua tổng các giai đoạn)
+            if (waterPool >= plantTotalWater) {
+                const lastStage = plant.stages[plant.stages.length - 1];
+                
+                const card = document.createElement('div');
+                card.className = 'plant-card';
+                card.onclick = () => openModal(plant);
+
+                let imgHtml = lastStage.image.includes('http') 
+                    ? `<img src="${lastStage.image}">` 
+                    : lastStage.image;
+
+                card.innerHTML = `
+                    <div class="plant-img-box">${imgHtml}</div>
+                    <div class="plant-info">
+                        <b>${plant.name}</b>
+                        <span>${plant.stages.length} GIAI ĐOẠN</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+                waterPool -= plantTotalWater;
+            }
+        });
+    }
+
+    // 3. Logic Pop-up chi tiết
+    function openModal(plant) {
+        document.getElementById('modal-title').innerText = plant.name;
+        const container = document.getElementById('modal-stages');
+        container.innerHTML = '';
+
+        plant.stages.forEach((st, index) => {
+            let imgHtml = st.image.includes('http') ? `<img src="${st.image}">` : st.image;
+            container.innerHTML += `
+                <div class="stage-item">
+                    <div class="stage-img">${imgHtml}</div>
+                    <div>
+                        <div style="font-weight:bold; color: #333;">Giai đoạn ${index + 1}</div>
+                        <div style="font-size:12px; color:#888;">Cần: ${st.required_water} 💧</div>
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById('plantModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('plantModal').style.display = 'none';
+    }
+</script>
+</body>
+</html>
