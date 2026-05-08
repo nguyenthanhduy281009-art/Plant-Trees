@@ -1,1 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plantrees - Đi bộ kiếm xu</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #2e7d32; --danger: #d32f2f; --bg: #f1f8e9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; text-align: center; padding: 20px; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { font-family: 'Luckiest Guy'; color: var(--primary); font-size: 28px; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
+        .stat-card { background: #f9f9f9; padding: 15px; border-radius: 15px; border-bottom: 4px solid #ddd; }
+        .stat-value { font-family: 'Luckiest Guy'; font-size: 30px; color: #333; }
+        .stat-label { font-size: 12px; color: #888; text-transform: uppercase; }
+        #status { font-size: 14px; color: #666; font-style: italic; margin: 15px 0; min-height: 40px; }
+        .btn-control {
+            background: var(--primary); color: white; border: none; padding: 15px;
+            border-radius: 50px; font-family: 'Luckiest Guy'; font-size: 18px;
+            cursor: pointer; box-shadow: 0 5px 0 #1b5e20; width: 100%;
+        }
+        .btn-control:disabled { background: #ccc; box-shadow: none; cursor: default; }
+        .locked { color: var(--danger); font-weight: bold; }
+    </style>
+</head>
+<body>
 
+    <div class="container">
+        <h1>🏃 ĐI BỘ KIẾM XU</h1>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="display-dist">0</div>
+                <div class="stat-label">Quãng đường (m)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="display-coins" style="color: #fbc02d;">0</div>
+                <div class="stat-label">Xu nhận được</div>
+            </div>
+        </div>
+
+        <p id="status">Sẵn sàng nhận diện di chuyển...</p>
+
+        <button id="btn-start" class="btn-control" onclick="startTracking()">BẮT ĐẦU THEO DÕI</button>
+        
+        <button class="btn-control" style="background: #888; box-shadow: 0 5px 0 #666; margin-top: 15px;" onclick="location.href='tasks.html'">QUAY LẠI</button>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAASOFywyAkx2G7ubR_XsODI1U2x7mSMpE",
+            authDomain: "plantrees-b1d99.firebaseapp.com",
+            databaseURL: "https://plantrees-b1d99-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "plantrees-b1d99",
+            storageBucket: "plantrees-b1d99.firebasestorage.app",
+            messagingSenderId: "208821406000",
+            appId: "1:208821406000:web:b4fac89c9a2f65d739e0f5"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        let watchID = null;
+        let lastCoords = null;
+        let totalDistance = 0;
+        let sessionCoins = 0;
+        const MAX_SPEED_MPS = 8; // Khoảng 28km/h (Giới hạn chạy bộ cực đại của người thường)
+
+        function startTracking() {
+            if (!navigator.geolocation) return alert("Thiết bị không hỗ trợ GPS!");
+            
+            document.getElementById('btn-start').disabled = true;
+            document.getElementById('status').innerText = "Đang kết nối vệ tinh...";
+
+            watchID = navigator.geolocation.watchPosition(updatePosition, handleError, {
+                enableHighAccuracy: true,
+                maximumAge: 0
+            });
+        }
+
+        async function updatePosition(position) {
+            const { latitude, longitude, speed } = position.coords;
+            const statusEl = document.getElementById('status');
+
+            // 1. KIỂM TRA VẬN TỐC BẤT THƯỜNG (ANTI-CHEAT)
+            // Tốc độ 'speed' trả về m/s. Nếu > 8m/s (xe máy/ô tô) là khóa.
+            if (speed > MAX_SPEED_MPS) {
+                lockTask("PHÁT HIỆN GIAN LẬN: Vận tốc quá nhanh! Nhiệm vụ đã bị khóa.");
+                return;
+            }
+
+            if (lastCoords) {
+                const dist = calculateDistance(lastCoords.latitude, lastCoords.longitude, latitude, longitude);
+
+                // Chỉ tính nếu di chuyển trên 2m để tránh nhiễu GPS đứng yên
+                if (dist >= 2) {
+                    totalDistance += dist;
+                    
+                    // Cơ chế: 2m = 1 xu
+                    const newCoins = Math.floor(dist / 2);
+                    if (newCoins > 0) {
+                        sessionCoins += newCoins;
+                        await updateFirebaseCoins(newCoins);
+                    }
+                    
+                    updateUI();
+                }
+            }
+            lastCoords = { latitude, longitude };
+            statusEl.innerText = "Đang di chuyển hợp lệ...";
+        }
+
+        async function updateFirebaseCoins(amount) {
+            const user = auth.currentUser;
+            if (user) {
+                await db.ref(`users/${user.uid}/coins`).set(firebase.database.ServerValue.increment(amount));
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('display-dist').innerText = Math.floor(totalDistance);
+            document.getElementById('display-coins').innerText = sessionCoins;
+        }
+
+        function lockTask(msg) {
+            navigator.geolocation.clearWatch(watchID);
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = `<span class="locked">${msg}</span>`;
+            document.getElementById('btn-start').disabled = true;
+            alert(msg);
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function handleError(error) {
+            document.getElementById('status').innerText = "Lỗi: Hãy bật định vị và cấp quyền cho trình duyệt!";
+            document.getElementById('btn-start').disabled = false;
+        }
+    </script>
+</body>
+</html>
