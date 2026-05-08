@@ -11,112 +11,111 @@
     <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #f1f8e9; --primary: #2e7d32; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-        
-        /* Header: Tên và chỉ số góc trên trái */
-        .header { display: flex; justify-content: space-between; padding: 15px 20px; align-items: flex-start; z-index: 10; }
-        .user-info-box { background: white; padding: 10px 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 12px; min-width: 180px; }
-        .stats-group { display: flex; flex-direction: column; gap: 2px; }
-        .stat-item { display: flex; align-items: center; gap: 5px; font-weight: 900; font-size: 14px; }
-        
-        .coin-img { width: 18px; height: 18px; }
-        .water-icon { color: #0288d1; font-size: 14px; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* Khu vực Cây trung tâm - Đã chỉnh lại kích thước to hơn */
-        .main-garden { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-        #tree-container { height: 300px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
-        #tree-container img { width: 250px; height: auto; filter: drop-shadow(0 10px 25px rgba(0,0,0,0.15)); transition: transform 0.3s; }
-        #tree-container:active img { transform: scale(0.95); }
+        /* Header */
+        .header { display: flex; justify-content: space-between; padding: 10px 15px; align-items: center; }
+        .user-info-box { background: white; padding: 8px 12px; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px; }
+        .stat-item { display: flex; align-items: center; gap: 5px; font-weight: 900; font-size: 13px; }
+        .coin-img { width: 18px; }
 
-        .global-info { text-align: center; margin-bottom: 10px; }
-        .total-drops { font-size: 32px; font-family: 'Luckiest Guy'; color: var(--primary); }
+        /* Khu vực trung tâm: Cây và Nút tưới */
+        .main-garden { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            padding-bottom: 80px; 
+        }
 
-        /* Nút Tưới nước & Nâng cấp */
-        .action-bar { padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        .pour-btn { width: 260px; height: 75px; border: none; border-radius: 25px; background: #0288d1; color: white; font-size: 26px; font-family: 'Luckiest Guy'; cursor: pointer; box-shadow: 0 6px 0 #01579b; }
-        .pour-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #01579b; }
-        .pour-btn:disabled { background: #ccc; box-shadow: 0 6px 0 #999; cursor: not-allowed; }
+        .global-counter { text-align: center; margin-bottom: 5px; }
+        .total-number { font-size: 32px; font-family: 'Luckiest Guy'; color: var(--primary); margin: 0; }
 
-        .upgrade-row { display: flex; gap: 10px; }
-        .up-card { background: white; padding: 10px 15px; border-radius: 15px; border: 1px solid #e0e0e0; cursor: pointer; font-size: 12px; font-weight: bold; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        #tree-display { height: 220px; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
+        #tree-display img { width: 200px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1)); transition: 0.2s; }
+
+        /* Cụm Nút Tưới & Nâng cấp */
+        .action-cluster { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+
+        .pour-btn { 
+            width: 240px; height: 65px; border: none; border-radius: 20px; 
+            background: #0288d1; color: white; font-size: 24px; 
+            font-family: 'Luckiest Guy'; cursor: pointer; 
+            box-shadow: 0 5px 0 #01579b; 
+        }
+        .pour-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #01579b; }
+        .pour-btn:disabled { background: #ccc; box-shadow: 0 5px 0 #999; cursor: not-allowed; }
+
+        .upgrade-row { display: flex; gap: 8px; }
+        .up-card { 
+            background: white; padding: 8px 12px; border-radius: 12px; 
+            border: 1px solid #ddd; cursor: pointer; font-size: 10px; 
+            font-weight: bold; text-align: center; min-width: 80px;
+        }
+
+        /* Thanh điều hướng */
         .footer-nav { 
-    width: 100%; 
-    display: grid; 
-    grid-template-columns: 1fr 1fr 1fr; /* Chia làm 3 phần bằng nhau */
-    background: white; 
-    border-top: 1px solid #eee; 
-    position: fixed; /* Giữ cố định ở dưới cùng màn hình */
-    bottom: 0;
-}
-.nav-link { 
-    padding: 15px 5px; 
-    text-align: center; 
-    text-decoration: none; 
-    color: #555; 
-    font-weight: 800; 
-    font-size: 11px; /* Chỉnh nhỏ lại một chút để vừa 3 chữ */
-    text-transform: uppercase;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-.nav-link i { font-size: 18px; color: var(--primary); }
-        
+            width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr; 
+            background: white; border-top: 1px solid #eee; 
+            position: fixed; bottom: 0; padding: 10px 0; z-index: 100;
+        }
+        .nav-item { text-align: center; text-decoration: none; color: #777; font-size: 10px; font-weight: 800; display: flex; flex-direction: column; gap: 4px; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item i { font-size: 18px; }
     </style>
 </head>
 <body>
 
 <div class="header">
     <div class="user-info-box">
-        <img id="u-avatar" src="https://cdn-icons-png.flaticon.com/512/4333/4333609.png" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover;">
+        <img id="u-avatar" src="https://cdn-icons-png.flaticon.com/512/4333/4333609.png" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover;">
         <div class="stats-group">
-            <div id="u-name" style="color: #333; font-weight: bold; font-size: 14px;">Đang tải...</div>
-            <div style="display: flex; gap: 12px;">
+            <div id="u-name" style="color: #333; font-weight: bold; font-size: 13px;">Đang tải...</div>
+            <div style="display: flex; gap: 10px;">
                 <div class="stat-item" style="color: #f3ba2f;">
                     <span id="u-coins">0</span> <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" class="coin-img">
                 </div>
                 <div class="stat-item" style="color: #0288d1;">
-                    <span id="cur-water">0</span>/<span id="max-water">3</span> <i class="fas fa-tint water-icon"></i>
+                    <span id="cur-water">0</span>/<span id="max-water">3</span> <i class="fas fa-tint"></i>
                 </div>
             </div>
         </div>
     </div>
-    <button onclick="auth.signOut()" style="border:none; background:none; color:#999; font-weight:bold; cursor:pointer; padding: 10px;">Thoát</button>
+    <button onclick="auth.signOut()" style="border:none; background:none; color:#999; font-weight:bold; cursor:pointer;">Thoát</button>
 </div>
 
 <div class="main-garden">
-    <div class="global-info">
-        <div style="font-size: 12px; font-weight: bold; color: #666; letter-spacing: 1px;">THẾ GIỚI ĐÃ TƯỚI</div>
-        <div class="total-drops" id="global-count">0</div>
+    <div class="global-counter">
+        <div style="font-size: 10px; font-weight: bold; color: #888;">THẾ GIỚI ĐÃ TƯỚI</div>
+        <div class="total-number" id="global-count">0</div>
     </div>
-    <div id="tree-container">🌱</div>
-    <div id="regen-text" style="font-size: 12px; color: #888; font-weight: bold;">Đang kiểm tra nước...</div>
-</div>
 
-<div class="action-bar">
-    <button class="pour-btn" id="btnPour" onclick="pourWater()">TƯỚI NƯỚC 💧</button>
-    <div class="upgrade-row">
-        <div class="up-card" onclick="upgrade('speed')">⚡ HỒI NHANH<br><span style="color: #f3ba2f;">50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span></div>
-        <div class="up-card" onclick="upgrade('storage')">📦 THÊM BÌNH<br><span style="color: #f3ba2f;">50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span></div>
+    <div id="tree-display">🌱</div>
+    
+    <div id="regen-text" style="font-size: 11px; color: #999; margin-bottom: 10px;">--:--</div>
+
+    <div class="action-cluster">
+        <button class="pour-btn" id="btnPour" onclick="pourWater()">TƯỚI NƯỚC 💧</button>
+        
+        <div class="upgrade-row">
+            <div class="up-card" onclick="upgrade('speed')">
+                ⚡ HỒI NHANH<br><span style="color: #f3ba2f;">50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span>
+            </div>
+            <div class="up-card" onclick="upgrade('storage')">
+                📦 THÊM BÌNH<br><span style="color: #f3ba2f;">50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span>
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="footer-nav">
-    <a href="index.html" class="nav-link" style="color: var(--primary);">
-        <i class="fas fa-seedling"></i> Khu vườn
-    </a>
-    
-    <a href="leaderboard.html" class="nav-link">
-        <i class="fas fa-trophy"></i> Xếp hạng
-    </a>
-    
-    <a href="tasks.html" class="nav-link">
-        <i class="fas fa-tasks"></i> Nhiệm vụ
-    </a>
+    <a href="index.html" class="nav-item active"><i class="fas fa-seedling"></i>KHU VƯỜN</a>
+    <a href="leaderboard.html" class="nav-item"><i class="fas fa-trophy"></i>XẾP HẠNG</a>
+    <a href="tasks.html" class="nav-item"><i class="fas fa-tasks"></i>NHIỆM VỤ</a>
 </div>
 
 <script>
-    // Duy nhớ dán Firebase Config của mình vào đây nhé!
     const firebaseConfig = {
         apiKey: "AIzaSyAASOFywyAkx2G7ubR_XsODI1U2x7mSMpE",
         authDomain: "plantrees-b1d99.firebaseapp.com",
@@ -143,7 +142,6 @@
         } else { window.location.href = "auth.html"; }
     });
 
-    // Tải danh sách cây từ Admin
     function loadPlantSettings() {
         db.ref('settings/plants').on('value', s => {
             plantSettings = [];
@@ -187,7 +185,7 @@
             if (currentProgress >= p.required_water) currentImg = p.image;
         });
 
-        const container = document.getElementById('tree-container');
+        const container = document.getElementById('tree-display');
         container.innerHTML = currentImg.includes('http') ? `<img src="${currentImg}">` : `<span>${currentImg}</span>`;
     }
 
@@ -215,43 +213,29 @@
         }, 1000);
     }
 
-   async function pourWater() {
-    const uid = auth.currentUser.uid;
-    const btn = document.getElementById('btnPour');
-    
-    // 1. Kiểm tra ngay lập tức nếu dữ liệu chưa tải xong hoặc không có nước
-    if (!userData || userData.currentWater === undefined || userData.currentWater <= 0) {
+    async function pourWater() {
+        const uid = auth.currentUser.uid;
+        const btn = document.getElementById('btnPour');
+        if (!userData || userData.currentWater <= 0) return;
+
         btn.disabled = true;
-        return;
+        try {
+            const updates = {};
+            updates['global/totalWater'] = firebase.database.ServerValue.increment(1);
+            updates[`users/${uid}/currentWater`] = firebase.database.ServerValue.increment(-1);
+            if (userData.currentWater === userData.maxWater) {
+                updates[`users/${uid}/lastRegenTime`] = Date.now();
+            }
+            await db.ref().update(updates);
+            
+            // Hiệu ứng rung cây
+            const treeImg = document.querySelector('#tree-display img');
+            if(treeImg) {
+                treeImg.style.transform = "scale(1.1) rotate(5deg)";
+                setTimeout(() => treeImg.style.transform = "scale(1) rotate(0deg)", 200);
+            }
+        } catch(e) { btn.disabled = false; }
     }
-
-    btn.disabled = true; // Vô hiệu hóa nút ngay khi bấm để tránh spam
-
-    try {
-        const updates = {};
-        updates['global/totalWater'] = firebase.database.ServerValue.increment(1);
-        updates[`users/${uid}/currentWater`] = firebase.database.ServerValue.increment(-1);
-        updates[`users/${uid}/waterLevel`] = firebase.database.ServerValue.increment(1);
-
-        // Cập nhật mốc thời gian hồi nước nếu bình đang đầy mà bị trừ đi
-        if (userData.currentWater === userData.maxWater) {
-            updates[`users/${uid}/lastRegenTime`] = Date.now();
-        }
-
-        await db.ref().update(updates);
-        
-        // Tạo hiệu ứng rung cây khi tưới thành công
-        const treeImg = document.querySelector('#tree-container img');
-        if(treeImg) {
-            treeImg.style.transform = "scale(1.1) rotate(5deg)";
-            setTimeout(() => treeImg.style.transform = "scale(1) rotate(0deg)", 200);
-        }
-
-    } catch(e) {
-        console.error("Lỗi tưới nước:", e);
-        btn.disabled = false;
-    }
-}
 
     async function upgrade(type) {
         const cost = 50;
