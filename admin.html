@@ -171,14 +171,16 @@
                     // Chuyển link drive thành link trực tiếp để hiện ảnh
                     const imgUrl = getDirectLink(lastStage.image);
 
-                    const row = `
-                        <tr>
-                            <td><b>${data.name}</b></td>
-                            <td>${data.stages.length}</td>
-                            <td>${imgUrl.includes('http') ? `<img src="${imgUrl}" class="img-preview" onerror="this.src='https://cdn-icons-png.flaticon.com/512/628/628283.png'">` : lastStage.image}</td>
-                            <td><button onclick="deletePlant('${child.key}')" style="color:red; border:none; background:none; cursor:pointer;">Xóa</button></td>
-                        </tr>
-                    `;
+                   const row = `
+    <tr>
+        <td><b>${data.name}</b></td>
+        <td>${data.stages.length}</td>
+        <td>${imgUrl.includes('http') ? 
+            `<img src="${imgUrl}" class="img-preview">` : 
+            lastStage.image}</td>
+        <td><button onclick="deletePlant('${child.key}')">Xóa</button></td>
+    </tr>
+`;
                     tbody.insertAdjacentHTML('beforeend', row);
                 }
             });
