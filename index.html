@@ -42,10 +42,13 @@
         /* KHÓA TƯƠNG TÁC VỚI ẢNH CÂY */
         #tree-display img { 
             width: 200px; 
+            /* Thêm mix-blend-mode để triệt tiêu sự lệch màu nền của ảnh */
+            mix-blend-mode: multiply; 
+            
             filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1)); 
             transition: 0.2s; 
-            pointer-events: none; /* Duy nhấn vào ảnh nó sẽ không hiện gì hết */
-            -webkit-user-drag: none; /* Không cho cầm kéo ảnh đi */
+            pointer-events: none; 
+            -webkit-user-drag: none; 
         }
 
         .action-cluster { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
