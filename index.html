@@ -39,9 +39,29 @@
 
         .upgrade-row { display: flex; gap: 10px; }
         .up-card { background: white; padding: 10px 15px; border-radius: 15px; border: 1px solid #e0e0e0; cursor: pointer; font-size: 12px; font-weight: bold; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-
-        .footer-nav { width: 100%; display: grid; grid-template-columns: 1fr 1fr; background: white; border-top: 1px solid #eee; }
-        .nav-link { padding: 18px; text-align: center; text-decoration: none; color: #555; font-weight: 800; font-size: 14px; }
+        .footer-nav { 
+    width: 100%; 
+    display: grid; 
+    grid-template-columns: 1fr 1fr 1fr; /* Chia làm 3 phần bằng nhau */
+    background: white; 
+    border-top: 1px solid #eee; 
+    position: fixed; /* Giữ cố định ở dưới cùng màn hình */
+    bottom: 0;
+}
+.nav-link { 
+    padding: 15px 5px; 
+    text-align: center; 
+    text-decoration: none; 
+    color: #555; 
+    font-weight: 800; 
+    font-size: 11px; /* Chỉnh nhỏ lại một chút để vừa 3 chữ */
+    text-transform: uppercase;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.nav-link i { font-size: 18px; color: var(--primary); }
+        
     </style>
 </head>
 <body>
@@ -82,8 +102,17 @@
 </div>
 
 <div class="footer-nav">
-    <a href="leaderboard.html" class="nav-link"><i class="fas fa-trophy"></i> XẾP HẠNG</a>
-    <a href="tasks.html" class="nav-link"><i class="fas fa-tasks"></i> NHIỆM VỤ</a>
+    <a href="index.html" class="nav-link" style="color: var(--primary);">
+        <i class="fas fa-seedling"></i> Khu vườn
+    </a>
+    
+    <a href="leaderboard.html" class="nav-link">
+        <i class="fas fa-trophy"></i> Xếp hạng
+    </a>
+    
+    <a href="tasks.html" class="nav-link">
+        <i class="fas fa-tasks"></i> Nhiệm vụ
+    </a>
 </div>
 
 <script>
