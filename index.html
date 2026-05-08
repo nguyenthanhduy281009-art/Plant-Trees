@@ -322,50 +322,44 @@ function renderPlant(totalGlobal) {
 }
 
     async function upgrade(type) {
-    // 1. Tính toán giá tiền và cấp độ hiện tại
+    const uid = auth.currentUser.uid;
     const speedLv = userData.speedLevel || 1;
     const storageLv = userData.storageLevel || 1;
+    const currentCoins = userData.coins || 0;
     
     let cost = 0;
     let updates = {};
 
     if (type === 'speed') {
-        // Giá mặc định 50, mỗi cấp tăng thêm 25 (Lv1: 50, Lv2: 75, Lv3: 100...)
         cost = 50 + (speedLv - 1) * 25;
-        
-        // Kiểm tra giới hạn: Tối đa thời gian hồi còn 50 giây
         const currentRegen = userData.regenSpeed || 3600;
-        if (currentRegen <= 50) {
-            return alert("Tốc độ hồi nước đã đạt tối đa rồi Duy ơi!");
-        }
 
-        if ((userData.coins || 0) < cost) return alert(`Duy cần ${cost} xu để nâng cấp Hồi nhanh!`);
+        if (currentRegen <= 50) return alert("Tốc độ hồi nước đã đạt tối đa!");
+        if (currentCoins < cost) return alert(`Duy cần ${cost} xu để nâng cấp!`);
 
-        updates['speedLevel'] = firebase.database.ServerValue.increment(1);
-        // Mỗi lần giảm 50 giây, không được thấp hơn 50 giây
+        updates['speedLevel'] = speedLv + 1;
+        // Giảm 50 giây cho mỗi cấp, không thấp hơn 50 giây
         updates['regenSpeed'] = Math.max(50, currentRegen - 50);
     } 
-    
     else if (type === 'storage') {
-        // Giá mặc định 100, mỗi cấp tăng thêm 50 (Lv1: 100, Lv2: 150, Lv3: 200...)
         cost = 100 + (storageLv - 1) * 50;
+        if (currentCoins < cost) return alert(`Duy cần ${cost} xu để nâng cấp!`);
 
-        if ((userData.coins || 0) < cost) return alert(`Duy cần ${cost} xu để thêm Bình chứa!`);
-
-        updates['storageLevel'] = firebase.database.ServerValue.increment(1);
-        // Mỗi cấp tăng thêm 1 bình
+        updates['storageLevel'] = storageLv + 1;
         updates['maxWater'] = (userData.maxWater || 3) + 1;
     }
 
-    // 2. Trừ tiền và cập nhật database
-    updates['coins'] = firebase.database.ServerValue.increment(-cost);
+    // Trừ tiền
+    updates['coins'] = currentCoins - cost;
 
     try {
-        await db.ref('users/' + auth.currentUser.uid).update(updates);
-        alert(`Nâng cấp thành công! Mất ${cost} xu.`);
+        // Cập nhật thẳng vào node của user
+        await db.ref('users/' + uid).update(updates);
+        // Lưu ý: alert nên để sau khi update thành công
+        console.log("Nâng cấp thành công!"); 
     } catch(e) {
         console.error(e);
-        alert("Có lỗi khi nâng cấp Duy ơi!");
+        alert("Lỗi hệ thống!");
     }
 }
 </script>
