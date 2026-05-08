@@ -13,100 +13,30 @@
         :root { --bg: #f1f8e9; --primary: #2e7d32; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* Header */
         .header { display: flex; justify-content: space-between; padding: 10px 15px; align-items: center; }
         .user-info-box { background: white; padding: 8px 12px; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px; }
         .stat-item { display: flex; align-items: center; gap: 5px; font-weight: 900; font-size: 13px; }
         .coin-img { width: 18px; }
 
-        /* Khu vực trung tâm: Cây và Nút tưới */
-        .main-garden { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            padding-bottom: 80px; 
-        }
-
-        .global-counter { text-align: center; margin-bottom: 5px; }
+        .main-garden { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 80px; }
         .total-number { font-size: 32px; font-family: 'Luckiest Guy'; color: var(--primary); margin: 0; }
 
         #tree-display { height: 220px; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
         #tree-display img { width: 200px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1)); transition: 0.2s; }
 
-        /* Cụm Nút Tưới & Nâng cấp */
         .action-cluster { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
-
-        .pour-btn { 
-            width: 240px; height: 65px; border: none; border-radius: 20px; 
-            background: #0288d1; color: white; font-size: 24px; 
-            font-family: 'Luckiest Guy'; cursor: pointer; 
-            box-shadow: 0 5px 0 #01579b; 
-        }
+        .pour-btn { width: 240px; height: 65px; border: none; border-radius: 20px; background: #0288d1; color: white; font-size: 24px; font-family: 'Luckiest Guy'; cursor: pointer; box-shadow: 0 5px 0 #01579b; }
         .pour-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #01579b; }
         .pour-btn:disabled { background: #ccc; box-shadow: 0 5px 0 #999; cursor: not-allowed; }
 
         .upgrade-row { display: flex; gap: 8px; }
-        .up-card { 
-            background: white; padding: 8px 12px; border-radius: 12px; 
-            border: 1px solid #ddd; cursor: pointer; font-size: 10px; 
-            font-weight: bold; text-align: center; min-width: 80px;
-        }
+        .up-card { background: white; padding: 8px 12px; border-radius: 12px; border: 1px solid #ddd; cursor: pointer; font-size: 10px; font-weight: bold; text-align: center; min-width: 80px; }
 
-        /* Thanh điều hướng xịn hơn */
-.footer-nav { 
-    width: 100%; 
-    display: flex; /* Dùng flex để chia đều */
-    justify-content: space-around; 
-    align-items: center;
-    background: #ffffff; 
-    border-top: 2px solid #f0f0f0; 
-    position: fixed; 
-    bottom: 0; 
-    left: 0; /* Đảm bảo không bị lệch trái */
-    right: 0;
-    padding: 12px 0 25px 0; /* Thêm padding dưới cho sang */
-    box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
-    z-index: 999;
-}
-
-.nav-link { 
-    text-align: center; 
-    text-decoration: none; 
-    color: #b0b0b0; 
-    flex: 1; /* Chia đều diện tích cho 3 nút */
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    gap: 5px;
-    transition: all 0.3s ease;
-}
-
-/* Biểu tượng (Icon) */
-.nav-link i { 
-    font-size: 22px; 
-    margin-bottom: 2px;
-}
-
-/* Chữ bên dưới Icon */
-.nav-link span {
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* Trang đang mở sẽ có màu xanh lá và hiệu ứng nổi bật */
-.nav-link.active { 
-    color: #2e7d32; 
-    transform: translateY(-3px); /* Nhô lên một chút */
-}
-
-.nav-link.active i {
-    color: #2e7d32;
-    filter: drop-shadow(0 2px 5px rgba(46, 125, 50, 0.3));
-}
+        .footer-nav { width: 100%; display: flex; justify-content: space-around; align-items: center; background: #ffffff; border-top: 2px solid #f0f0f0; position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 0 25px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 999; }
+        .nav-link { text-align: center; text-decoration: none; color: #b0b0b0; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: all 0.3s ease; }
+        .nav-link i { font-size: 22px; }
+        .nav-link span { font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .nav-link.active { color: #2e7d32; transform: translateY(-3px); }
     </style>
 </head>
 <body>
@@ -117,12 +47,8 @@
         <div class="stats-group">
             <div id="u-name" style="color: #333; font-weight: bold; font-size: 13px;">Đang tải...</div>
             <div style="display: flex; gap: 10px;">
-                <div class="stat-item" style="color: #f3ba2f;">
-                    <span id="u-coins">0</span> <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" class="coin-img">
-                </div>
-                <div class="stat-item" style="color: #0288d1;">
-                    <span id="cur-water">0</span>/<span id="max-water">3</span> <i class="fas fa-tint"></i>
-                </div>
+                <div class="stat-item" style="color: #f3ba2f;"><span id="u-coins">0</span> <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" class="coin-img"></div>
+                <div class="stat-item" style="color: #0288d1;"><span id="cur-water">0</span>/<span id="max-water">3</span> <i class="fas fa-tint"></i></div>
             </div>
         </div>
     </div>
@@ -134,41 +60,23 @@
         <div style="font-size: 10px; font-weight: bold; color: #888;">THẾ GIỚI ĐÃ TƯỚI</div>
         <div class="total-number" id="global-count">0</div>
     </div>
-
     <div id="tree-display">🌱</div>
-    
     <div id="regen-text" style="font-size: 11px; color: #999; margin-bottom: 10px;">--:--</div>
-
     <div class="action-cluster">
         <button class="pour-btn" id="btnPour" onclick="pourWater()">TƯỚI NƯỚC 💧</button>
-        
         <div class="upgrade-row">
-            <div class="up-card" onclick="upgrade('speed')">
-                ⚡ HỒI NHANH<br><span style="color: #f3ba2f;">50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span>
-            </div>
-            <div class="up-card" onclick="upgrade('storage')">
-                📦 THÊM BÌNH<br><span style="color: #f3ba2f;">50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span>
-            </div>
+            <div class="up-card" onclick="upgrade('speed')">⚡ HỒI NHANH<br><span style="color: #f3ba2f;">50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span></div>
+            <div class="up-card" onclick="upgrade('storage')">📦 THÊM BÌNH<br><span style="color: #f3ba2f;">50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span></div>
         </div>
     </div>
 </div>
 
 <div class="footer-nav">
-    <a href="garden.html" class="nav-link">
-        <i class="fas fa-seedling"></i>
-        <span>Khu Vườn</span>
-    </a>
-    
-    <a href="tasks.html" class="nav-link">
-        <i class="fas fa-tasks"></i>
-        <span>Nhiệm Vụ</span>
-    </a>
-    
-    <a href="leaderboard.html" class="nav-link">
-        <i class="fas fa-trophy"></i>
-        <span>Xếp Hạng</span>
-    </a>
+    <a href="garden.html" class="nav-link"><i class="fas fa-seedling"></i><span>Khu Vườn</span></a>
+    <a href="tasks.html" class="nav-link"><i class="fas fa-tasks"></i><span>Nhiệm Vụ</span></a>
+    <a href="leaderboard.html" class="nav-link"><i class="fas fa-trophy"></i><span>Xếp Hạng</span></a>
 </div>
+
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyAASOFywyAkx2G7ubR_XsODI1U2x7mSMpE",
@@ -207,7 +115,7 @@
     function listenToUser(uid) {
         db.ref('users/' + uid).on('value', s => {
             userData = s.val() || {};
-            const curW = userData.currentWater !== undefined ? userData.currentWater : 3;
+            const curW = userData.currentWater !== undefined ? userData.currentWater : 0;
             const maxW = userData.maxWater || 3;
             const speed = userData.regenSpeed || 3600;
 
@@ -217,6 +125,7 @@
             document.getElementById('max-water').innerText = maxW;
             if(userData.avatarUrl) document.getElementById('u-avatar').src = userData.avatarUrl;
             
+            // QUAN TRỌNG: Mở khóa nút tưới ngay khi load nếu có nước
             document.getElementById('btnPour').disabled = (curW <= 0);
             startRegenLogic(uid, curW, maxW, speed);
         });
@@ -234,11 +143,7 @@
         const waterPerCycle = 1000;
         const currentProgress = total % waterPerCycle;
         let currentImg = "🌱";
-
-        plantSettings.forEach(p => {
-            if (currentProgress >= p.required_water) currentImg = p.image;
-        });
-
+        plantSettings.forEach(p => { if (currentProgress >= p.required_water) currentImg = p.image; });
         const container = document.getElementById('tree-display');
         container.innerHTML = currentImg.includes('http') ? `<img src="${currentImg}">` : `<span>${currentImg}</span>`;
     }
@@ -249,63 +154,29 @@
             const now = Date.now();
             const lastUpdate = userData.lastRegenTime || now;
             const elapsed = Math.floor((now - lastUpdate) / 1000);
-
             if (curW < maxW) {
                 if (elapsed >= speed) {
-                    db.ref('users/' + uid).update({
-                        currentWater: Math.min(maxW, curW + 1),
-                        lastRegenTime: now
-                    });
+                    db.ref('users/' + uid).update({ currentWater: Math.min(maxW, curW + 1), lastRegenTime: now });
                 }
                 const remaining = speed - (elapsed % speed);
                 const m = Math.floor(remaining / 60);
                 const s = remaining % 60;
                 document.getElementById('regen-text').innerText = `Hồi nước sau: ${m}:${s < 10 ? '0'+s : s}`;
-            } else {
-                document.getElementById('regen-text').innerText = "Bình nước đã đầy ✨";
-            }
+            } else { document.getElementById('regen-text').innerText = "Bình nước đã đầy ✨"; }
         }, 1000);
     }
 
-   async function pourWater() {
-    const uid = auth.currentUser.uid;
-    const btn = document.getElementById('btnPour');
-    
-    // 1. Kiểm tra ngay lập tức nếu dữ liệu chưa tải xong hoặc không có nước
-    if (!userData || userData.currentWater === undefined || userData.currentWater <= 0) {
-        btn.disabled = true;
-        return;
-    }
-
-    btn.disabled = true; // Vô hiệu hóa nút ngay khi bấm để tránh spam
-
-    try {
-        const updates = {};
-        updates['global/totalWater'] = firebase.database.ServerValue.increment(1);
-        updates[`users/${uid}/currentWater`] = firebase.database.ServerValue.increment(-1);
-        updates[`users/${uid}/waterLevel`] = firebase.database.ServerValue.increment(1);
-
-        // Cập nhật mốc thời gian hồi nước nếu bình đang đầy mà bị trừ đi
-        if (userData.currentWater === userData.maxWater) {
-            updates[`users/${uid}/lastRegenTime`] = Date.now();
-        }
-
-        await db.ref().update(updates);
-        
-        // Tạo hiệu ứng rung cây khi tưới thành công
-        const treeImg = document.querySelector('#tree-container img');
-        if(treeImg) {
-            treeImg.style.transform = "scale(1.1) rotate(5deg)";
-            setTimeout(() => treeImg.style.transform = "scale(1) rotate(0deg)", 200);
-        }
-
-    } catch(e) {
-        console.error("Lỗi tưới nước:", e);
-        btn.disabled = false;
-    }
-}
-            
-            // Hiệu ứng rung cây
+    async function pourWater() {
+        const uid = auth.currentUser.uid;
+        const btn = document.getElementById('btnPour');
+        if (!userData || userData.currentWater <= 0) return;
+        btn.disabled = true;
+        try {
+            const updates = {};
+            updates['global/totalWater'] = firebase.database.ServerValue.increment(1);
+            updates[`users/${uid}/currentWater`] = firebase.database.ServerValue.increment(-1);
+            if (userData.currentWater === userData.maxWater) { updates[`users/${uid}/lastRegenTime`] = Date.now(); }
+            await db.ref().update(updates);
             const treeImg = document.querySelector('#tree-display img');
             if(treeImg) {
                 treeImg.style.transform = "scale(1.1) rotate(5deg)";
