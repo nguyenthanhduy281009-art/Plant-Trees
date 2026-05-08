@@ -54,15 +54,59 @@
             font-weight: bold; text-align: center; min-width: 80px;
         }
 
-        /* Thanh điều hướng */
-        .footer-nav { 
-            width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr; 
-            background: white; border-top: 1px solid #eee; 
-            position: fixed; bottom: 0; padding: 10px 0; z-index: 100;
-        }
-        .nav-item { text-align: center; text-decoration: none; color: #777; font-size: 10px; font-weight: 800; display: flex; flex-direction: column; gap: 4px; }
-        .nav-item.active { color: var(--primary); }
-        .nav-item i { font-size: 18px; }
+        /* Thanh điều hướng xịn hơn */
+.footer-nav { 
+    width: 100%; 
+    display: flex; /* Dùng flex để chia đều */
+    justify-content: space-around; 
+    align-items: center;
+    background: #ffffff; 
+    border-top: 2px solid #f0f0f0; 
+    position: fixed; 
+    bottom: 0; 
+    left: 0; /* Đảm bảo không bị lệch trái */
+    right: 0;
+    padding: 12px 0 25px 0; /* Thêm padding dưới cho sang */
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+    z-index: 999;
+}
+
+.nav-link { 
+    text-align: center; 
+    text-decoration: none; 
+    color: #b0b0b0; 
+    flex: 1; /* Chia đều diện tích cho 3 nút */
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 5px;
+    transition: all 0.3s ease;
+}
+
+/* Biểu tượng (Icon) */
+.nav-link i { 
+    font-size: 22px; 
+    margin-bottom: 2px;
+}
+
+/* Chữ bên dưới Icon */
+.nav-link span {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Trang đang mở sẽ có màu xanh lá và hiệu ứng nổi bật */
+.nav-link.active { 
+    color: #2e7d32; 
+    transform: translateY(-3px); /* Nhô lên một chút */
+}
+
+.nav-link.active i {
+    color: #2e7d32;
+    filter: drop-shadow(0 2px 5px rgba(46, 125, 50, 0.3));
+}
     </style>
 </head>
 <body>
@@ -110,16 +154,19 @@
 </div>
 
 <div class="footer-nav">
-    <a href="garden.html" class="nav-item">
-        <i class="fas fa-seedling"></i>KHU VƯỜN
+    <a href="garden.html" class="nav-link">
+        <i class="fas fa-seedling"></i>
+        <span>Khu Vườn</span>
     </a>
     
-    <a href="index.html" class="nav-item">
-        <i class="fas fa-home"></i>TRANG CHỦ
+    <a href="index.html" class="nav-link active">
+        <i class="fas fa-home"></i>
+        <span>Trang Chủ</span>
     </a>
     
-    <a href="leaderboard.html" class="nav-item">
-        <i class="fas fa-trophy"></i>XẾP HẠNG
+    <a href="leaderboard.html" class="nav-link">
+        <i class="fas fa-trophy"></i>
+        <span>Xếp Hạng</span>
     </a>
 </div>
 
