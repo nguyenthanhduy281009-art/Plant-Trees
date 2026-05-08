@@ -100,16 +100,20 @@
             parent.classList.toggle('active');
         }
         async function checkDailyAttendance() {
-    const uid = firebase.auth().currentUser.uid;
+    const user = auth.currentUser;
+    if (!user) return alert("Vui lòng đăng nhập để thực hiện điểm danh!");
+
+    const uid = user.uid;
     const userRef = db.ref(`users/${uid}/attendance`);
     const now = new Date();
-    const todayStr = now.toDateString(); // Tạo chuỗi ngày dạng "Fri May 08 2026"
+    const todayStr = now.toDateString(); 
 
-    const snapshot = await userRef.get();
+    const snapshot = await userRef.once('value');
     let data = snapshot.val() || { streak: 0, lastDate: "" };
 
+    // 1. Kiểm tra nếu hôm nay đã điểm danh rồi
     if (data.lastDate === todayStr) {
-        alert("Hôm nay Duy đã điểm danh rồi, quay lại vào ngày mai nhé!");
+        alert("Hôm nay bạn đã điểm danh rồi. Hãy quay lại vào ngày mai nhé!");
         return;
     }
 
@@ -117,24 +121,27 @@
     const yesterday = new Date();
     yesterday.setDate(now.getDate() - 1);
 
-    // Kiểm tra nếu là ngày liên tiếp
+    // 2. Xác định chuỗi (streak)
     if (data.lastDate === "" || lastDate.toDateString() === yesterday.toDateString()) {
-        data.streak += 1;
+        data.streak += 1; // Tăng chuỗi nếu điểm danh liên tiếp
     } else {
-        data.streak = 1; // Bị đứt chuỗi thì reset về 1
+        data.streak = 1; // Reset về ngày 1 nếu đứt chuỗi
+        alert("Tiếc quá, chuỗi điểm danh đã bị ngắt. Bắt đầu lại từ ngày 1 nhé!");
     }
 
+    // 3. Tính số xu thưởng: Ngày 1 được 5, Ngày 2 được 10, Ngày 3 được 15...
+    const bonusCoins = data.streak * 5;
+
+    // 4. Cập nhật dữ liệu
     data.lastDate = todayStr;
     
-    if (data.streak >= 3) {
-        alert(`Chúc mừng! Duy đã điểm danh 3 ngày liên tiếp. Nhận 200 xu! 🎉`);
-        await db.ref(`users/${uid}/coins`).set(firebase.database.ServerValue.increment(200));
-        data.streak = 0; // Reset sau khi nhận quà lớn hoặc tùy Duy muốn giữ streak
-    } else {
-        alert(`Điểm danh thành công ngày ${data.streak}! Cố gắng thêm ${3 - data.streak} ngày nữa.`);
-    }
-
+    // Lưu lại chuỗi ngày và ngày điểm danh cuối
     await userRef.set(data);
+
+    // Cộng xu vào tài khoản người chơi
+    await db.ref(`users/${uid}/coins`).set(firebase.database.ServerValue.increment(bonusCoins));
+
+    alert(`Điểm danh thành công ngày thứ ${data.streak}!\nBạn nhận được ${bonusCoins} xu.`);
 }
     </script>
 </body>
