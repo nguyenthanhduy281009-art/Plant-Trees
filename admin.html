@@ -90,6 +90,18 @@
     let currentStageIndex = 1;
     let gatheredStages = [];
 
+    // Dán hàm này vào đoạn đầu script nhé Duy
+    function getDirectLink(url) {
+        if (url && url.includes('drive.google.com')) {
+            const parts = url.split('/d/');
+            if (parts.length > 1) {
+                const id = parts[1].split('/')[0];
+                return `https://drive.google.com/uc?export=view&id=${id}`;
+            }
+        }
+        return url;
+    }
+
     // Bước 1 -> Bước 2
     function startInputStages() {
         tempName = document.getElementById('p-name').value;
@@ -153,16 +165,22 @@
             
             s.forEach(child => {
                 const data = child.val();
-                const lastStage = data.stages[data.stages.length - 1];
-                const row = `
-                    <tr>
-                        <td><b>${data.name}</b></td>
-                        <td>${data.stages.length}</td>
-                        <td>${lastStage.image.includes('http') ? `<img src="${lastStage.image}" class="img-preview">` : lastStage.image}</td>
-                        <td><button onclick="deletePlant('${child.key}')" style="color:red; border:none; background:none; cursor:pointer;">Xóa</button></td>
-                    </tr>
-                `;
-                tbody.insertAdjacentHTML('beforeend', row);
+                // Chỉ lấy các cây có đủ dữ liệu stages
+                if (data.stages && data.stages.length > 0) {
+                    const lastStage = data.stages[data.stages.length - 1];
+                    // Chuyển link drive thành link trực tiếp để hiện ảnh
+                    const imgUrl = getDirectLink(lastStage.image);
+
+                    const row = `
+                        <tr>
+                            <td><b>${data.name}</b></td>
+                            <td>${data.stages.length}</td>
+                            <td>${imgUrl.includes('http') ? `<img src="${imgUrl}" class="img-preview" onerror="this.src='https://cdn-icons-png.flaticon.com/512/628/628283.png'">` : lastStage.image}</td>
+                            <td><button onclick="deletePlant('${child.key}')" style="color:red; border:none; background:none; cursor:pointer;">Xóa</button></td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                }
             });
         });
     }
