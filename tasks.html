@@ -13,33 +13,26 @@
         :root { --primary: #2e7d32; --bg: #f1f8e9; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
         h1 { font-family: 'Luckiest Guy'; color: var(--primary); text-align: center; }
-
         .task-container { max-width: 500px; margin: auto; }
-
         .task-item {
             background: white; border-radius: 15px; margin-bottom: 10px;
             overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
             transition: 0.3s;
         }
-
         .task-header { padding: 15px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
         .task-info { flex: 1; font-weight: bold; color: #333; }
         .arrow-icon { transition: transform 0.3s; color: #999; }
         .active .arrow-icon { transform: rotate(180deg); }
-
         .task-detail {
             max-height: 0; padding: 0 15px; background: #fafafa;
             transition: all 0.3s ease-out; opacity: 0;
         }
-
         .active .task-detail { max-height: 300px; padding: 15px; opacity: 1; border-top: 1px solid #eee; }
-
         .btn-go {
             background: var(--primary); color: white; border: none; padding: 10px 20px;
             border-radius: 50px; font-family: 'Luckiest Guy'; width: 100%; margin-top: 10px;
             cursor: pointer; box-shadow: 0 4px 0 #1b5e20;
         }
-
         .btn-back {
             background: #888; color: white; border: none; padding: 15px;
             border-radius: 50px; font-family: 'Luckiest Guy'; width: 100%;
@@ -75,10 +68,10 @@
             </div>
             <div class="task-detail">
                 <p style="font-size: 13px; color: #666; margin: 0;">
-                    <b>Luật chơi:</b> Mỗi ngày điểm danh nhận 5 xu. Nếu duy trì chuỗi liên tục, số xu nhận được sẽ cộng dồn thêm 5 xu mỗi ngày (Ngày 2 nhận 10, Ngày 3 nhận 15...).<br>
+                    <b>Luật chơi:</b> Mỗi ngày điểm danh nhận 5 xu. Nếu duy trì chuỗi liên tục, số xu nhận được sẽ cộng dồn thêm 5 xu mỗi ngày.<br>
                     <b>Lưu ý:</b> Nếu ngắt quãng sẽ quay lại mốc 5 xu.
                 </p>
-                <button class="btn-go" onclick="checkDailyAttendance()">ĐIỂM DANH NGAY</button>
+                <button id="btn-attendance" class="btn-go" onclick="checkDailyAttendance()">ĐIỂM DANH NGAY</button>
             </div>
         </div>
 
@@ -86,7 +79,6 @@
     </div>
 
     <script>
-        // CẤU HÌNH FIREBASE (Mày dán Config của mày vào đây)
         const firebaseConfig = {
             apiKey: "AIzaSyAASOFywyAkx2G7ubR_XsODI1U2x7mSMpE",
             authDomain: "plantrees-b1d99.firebaseapp.com",
@@ -100,6 +92,20 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
+        let currentUser = null;
+
+        // --- PHẦN QUAN TRỌNG NHẤT: LẮNG NGHE ĐĂNG NHẬP ---
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                console.log("Đã nhận diện tài khoản:", user.uid);
+                // Vừa vào trang là kiểm tra nút luôn
+                checkButtonStatus(user.uid);
+            } else {
+                console.log("Người dùng chưa đăng nhập.");
+            }
+        });
+
         function toggleTask(element) {
             const parent = element.parentElement;
             document.querySelectorAll('.task-item').forEach(item => {
@@ -108,41 +114,67 @@
             parent.classList.toggle('active');
         }
 
-        async function checkDailyAttendance() {
-            const user = auth.currentUser;
-            if (!user) return alert("Vui lòng đăng nhập để thực hiện điểm danh!");
+        async function checkButtonStatus(uid) {
+            const todayStr = new Date().toDateString();
+            const snapshot = await db.ref(`users/${uid}/attendance/lastDate`).once('value');
+            if (snapshot.val() === todayStr) {
+                const btn = document.getElementById('btn-attendance');
+                if (btn) {
+                    btn.innerText = "ĐÃ ĐIỂM DANH";
+                    btn.style.background = "#888"; 
+                    btn.style.boxShadow = "none";
+                    btn.disabled = true; 
+                    btn.style.cursor = "default";
+                }
+            }
+        }
 
-            const uid = user.uid;
+        async function checkDailyAttendance() {
+            if (!currentUser) {
+                alert("Vui lòng đợi hệ thống xác nhận tài khoản!");
+                return;
+            }
+
+            const uid = currentUser.uid;
             const userRef = db.ref(`users/${uid}/attendance`);
             const now = new Date();
             const todayStr = now.toDateString(); 
 
-            const snapshot = await userRef.once('value');
-            let data = snapshot.val() || { streak: 0, lastDate: "" };
+            try {
+                const snapshot = await userRef.once('value');
+                let data = snapshot.val() || { streak: 0, lastDate: "" };
 
-            if (data.lastDate === todayStr) {
-                alert("Hôm nay bạn đã điểm danh rồi. Hãy quay lại vào ngày mai nhé!");
-                return;
+                if (data.lastDate === todayStr) {
+                    alert("Hôm nay bạn đã điểm danh rồi.");
+                    return;
+                }
+
+                const lastDate = new Date(data.lastDate);
+                const yesterday = new Date();
+                yesterday.setDate(now.getDate() - 1);
+
+                if (data.lastDate === "" || lastDate.toDateString() === yesterday.toDateString()) {
+                    data.streak += 1;
+                } else {
+                    data.streak = 1; 
+                    alert("Chuỗi điểm danh đã bị ngắt. Bắt đầu lại từ ngày 1 nhé!");
+                }
+
+                const bonusCoins = data.streak * 5;
+                data.lastDate = todayStr;
+                
+                await userRef.set(data);
+                await db.ref(`users/${uid}/coins`).set(firebase.database.ServerValue.increment(bonusCoins));
+
+                alert(`Điểm danh thành công ngày thứ ${data.streak}!\nBạn nhận được ${bonusCoins} xu.`);
+                
+                // Cập nhật nút ngay sau khi bấm xong
+                checkButtonStatus(uid);
+
+            } catch (e) {
+                console.error(e);
+                alert("Lỗi kết nối máy chủ, vui lòng thử lại!");
             }
-
-            const lastDate = new Date(data.lastDate);
-            const yesterday = new Date();
-            yesterday.setDate(now.getDate() - 1);
-
-            if (data.lastDate === "" || lastDate.toDateString() === yesterday.toDateString()) {
-                data.streak += 1;
-            } else {
-                data.streak = 1; 
-                alert("Chuỗi điểm danh đã bị ngắt. Bắt đầu lại từ ngày 1 nhé!");
-            }
-
-            const bonusCoins = data.streak * 5;
-            data.lastDate = todayStr;
-            
-            await userRef.set(data);
-            await db.ref(`users/${uid}/coins`).set(firebase.database.ServerValue.increment(bonusCoins));
-
-            alert(`Điểm danh thành công ngày thứ ${data.streak}!\nBạn nhận được ${bonusCoins} xu.`);
         }
     </script>
 </body>
