@@ -10,13 +10,38 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #f1f8e9; --primary: #2e7d32; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        :root { 
+    --bg: #ffffff; /* Đổi thành màu trắng */
+    --primary: #2e7d32; 
+}
 
-        .header { display: flex; justify-content: space-between; padding: 10px 15px; align-items: center; }
-        .user-info-box { background: white; padding: 8px 12px; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px; }
-        .stat-item { display: flex; align-items: center; gap: 5px; font-weight: 900; font-size: 13px; }
-        .coin-img { width: 18px; }
+body { 
+    font-family: 'Segoe UI', sans-serif; 
+    margin: 0; 
+    background: var(--bg); 
+    height: 100vh; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden;
+    
+    /* KHÓA CHẠM VÀ COPY */
+    user-select: none; /* Không cho bôi đen/copy chữ */
+    -webkit-user-select: none;
+    -webkit-touch-callout: none; /* Khóa menu chuột phải khi nhấn giữ trên điện thoại */
+    touch-action: manipulation; /* Ngăn zoom khi nhấn liên tiếp */
+}
+
+/* KHÓA TƯƠNG TÁC VỚI ẢNH */
+img {
+    -webkit-user-drag: none; /* Không cho kéo ảnh */
+    pointer-events: none;    /* Ảnh chỉ để nhìn, không thể nhấn vào */
+}
+
+/* RIÊNG CÁC NÚT BẤM THÌ PHẢI CHO NHẤN */
+button, .up-card, .nav-link {
+    pointer-events: auto; 
+    cursor: pointer;
+}
 
         .main-garden { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 80px; }
         .total-number { font-size: 32px; font-family: 'Luckiest Guy'; color: var(--primary); margin: 0; }
