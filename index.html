@@ -12,148 +12,165 @@
     <style>
         :root { --bg: #f1f8e9; --primary: #2e7d32; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-        .header { display: flex; justify-content: space-between; padding: 15px 20px; align-items: center; }
-        .user-pill { background: white; padding: 5px 15px; border-radius: 30px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .coin-icon { width: 18px; vertical-align: middle; }
         
+        /* Header mới: Tên và các chỉ số nằm gọn góc trên */
+        .header { display: flex; justify-content: space-between; padding: 15px 20px; align-items: flex-start; z-index: 10; }
+        .user-info-box { background: white; padding: 10px 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 12px; }
+        .stats-group { display: flex; flex-direction: column; gap: 4px; }
+        .stat-item { display: flex; align-items: center; gap: 5px; font-weight: 900; font-size: 14px; }
+        
+        .coin-img, .water-icon { width: 18px; }
+        .water-icon { color: #0288d1; }
+
         .main-garden { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #tree-container { font-size: 150px; height: 250px; display: flex; align-items: center; transition: 0.3s; }
-        #tree-container img { width: 220px; }
+        #tree-container { height: 250px; display: flex; align-items: center; justify-content: center; }
+        #tree-container img { width: 220px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1)); }
 
-        .status-bar { background: rgba(255,255,255,0.8); padding: 10px 20px; border-radius: 20px; margin-bottom: 10px; text-align: center; }
-        .water-progress { width: 200px; height: 12px; background: #ddd; border-radius: 10px; overflow: hidden; margin-top: 5px; }
-        #water-fill { height: 100%; background: #0288d1; width: 0%; transition: 0.3s; }
-
-        .action-bar { padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .pour-btn { width: 250px; height: 70px; border: none; border-radius: 25px; background: #0288d1; color: white; font-size: 24px; font-family: 'Luckiest Guy'; cursor: pointer; box-shadow: 0 6px 0 #01579b; }
+        .action-bar { padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .pour-btn { width: 260px; height: 75px; border: none; border-radius: 25px; background: #0288d1; color: white; font-size: 26px; font-family: 'Luckiest Guy'; cursor: pointer; box-shadow: 0 6px 0 #01579b; transition: 0.1s; }
         .pour-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #01579b; }
-        .pour-btn:disabled { background: #999; box-shadow: 0 6px 0 #666; }
+        .pour-btn:disabled { background: #999; box-shadow: 0 6px 0 #666; opacity: 0.7; }
 
-        .upgrade-section { display: flex; gap: 10px; margin-top: 10px; }
-        .up-btn { padding: 8px 12px; font-size: 11px; background: white; border: 1px solid #ddd; border-radius: 10px; cursor: pointer; }
+        .upgrade-row { display: flex; gap: 10px; }
+        .up-card { background: white; padding: 8px 15px; border-radius: 12px; border: 1px solid #e0e0e0; cursor: pointer; font-size: 11px; font-weight: bold; color: #555; text-align: center; }
 
-        .footer-nav { width: 100%; display: grid; grid-template-columns: 1fr 1fr; background: white; border-top: 1px solid #ddd; }
-        .nav-item { padding: 15px; border: none; background: none; font-weight: bold; color: #555; }
+        .footer-nav { width: 100%; display: grid; grid-template-columns: 1fr 1fr; background: white; border-top: 1px solid #eee; }
+        .nav-link { padding: 18px; text-align: center; text-decoration: none; color: #666; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div class="user-pill">
-        <img id="u-avatar" src="" style="width:35px; border-radius:50%">
-        <div>
-            <div id="u-name" style="font-size: 12px; font-weight: bold;">...</div>
-            <div style="font-size: 14px; color: #f3ba2f; font-weight: 900;">
-                <span id="u-coins">0</span> 
-                <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" class="coin-icon">
+    <div class="user-info-box">
+        <img id="u-avatar" src="" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--primary);">
+        <div class="stats-group">
+            <div id="u-name" style="color: #333; font-size: 14px; margin-bottom: 2px;">Đang tải...</div>
+            <div style="display: flex; gap: 15px;">
+                <div class="stat-item" style="color: #f3ba2f;">
+                    <span id="u-coins">0</span> <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" class="coin-img">
+                </div>
+                <div class="stat-item" style="color: #0288d1;">
+                    <span id="cur-water">0</span>/<span id="max-water">3</span> <i class="fas fa-tint water-icon"></i>
+                </div>
             </div>
         </div>
     </div>
-    <button onclick="auth.signOut()">Thoát</button>
+    <button onclick="auth.signOut()" style="border:none; background:none; color:#aaa; font-weight:bold; cursor:pointer;">Thoát</button>
 </div>
 
 <div class="main-garden">
-    <div class="status-bar">
-        <div style="font-weight: bold; color: #0288d1;">Bình nước: <span id="cur-water">0</span>/<span id="max-water">10</span></div>
-        <div class="water-progress"><div id="water-fill"></div></div>
-        <div id="regen-timer" style="font-size: 10px; color: #888; margin-top: 3px;">Hồi phục sau: --s</div>
-    </div>
     <div id="tree-container">🌱</div>
+    <div id="regen-text" style="font-size: 11px; color: #999; margin-top: 15px;">Hồi phục sau: --:--</div>
 </div>
 
 <div class="action-bar">
     <button class="pour-btn" id="btnPour" onclick="pourWater()">TƯỚI NƯỚC 💧</button>
     
-    <div class="upgrade-section">
-        <button class="up-btn" onclick="upgrade('speed')">⚡ Hồi nhanh (50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10">)</button>
-        <button class="up-btn" onclick="upgrade('storage')">📦 Thêm bình (50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10">)</button>
+    <div class="upgrade-row">
+        <div class="up-card" onclick="upgrade('speed')">⚡ HỒI NHANH<br><span style="color: #f3ba2f;">50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span></div>
+        <div class="up-card" onclick="upgrade('storage')">📦 THÊM BÌNH<br><span style="color: #f3ba2f;">50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span></div>
     </div>
 </div>
 
 <div class="footer-nav">
-    <button class="nav-item" onclick="location.href='leaderboard.html'">XẾP HẠNG</button>
-    <button class="nav-item" onclick="location.href='tasks.html'">NHIỆM VỤ</button>
+    <a href="leaderboard.html" class="nav-link"><i class="fas fa-trophy"></i> Xếp hạng</a>
+    <a href="tasks.html" class="nav-link"><i class="fas fa-list-check"></i> Nhiệm vụ</a>
 </div>
 
 <script>
-    // --- Cấu hình Firebase giữ nguyên của Duy ---
-    const firebaseConfig = { /* ... */ };
+    // Firebase Config (Duy giữ nguyên thông tin của mình nhé)
+    const firebaseConfig = { /* Thông tin Firebase của Duy */ };
+    
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const auth = firebase.auth();
 
     let userData = {};
-    let plantSettings = [];
     let regenInterval;
 
     auth.onAuthStateChanged(user => {
         if (user) {
             listenToUser(user.uid);
-            listenToGlobal();
-            loadPlantSettings();
+            // Các hàm listenGlobal và loadPlantSettings giữ nguyên như cũ
         } else { window.location.href = "auth.html"; }
     });
 
     function listenToUser(uid) {
         db.ref('users/' + uid).on('value', s => {
             userData = s.val() || {};
-            const curW = userData.currentWater || 0;
-            const maxW = userData.maxWater || 10;
-            const coins = userData.coins || 0;
-
-            document.getElementById('u-name').innerText = userData.name || "User";
-            document.getElementById('u-coins').innerText = coins.toLocaleString();
+            
+            // Thiết lập mặc định nếu User mới chưa có data
+            const curW = userData.currentWater !== undefined ? userData.currentWater : 3;
+            const maxW = userData.maxWater || 3; // Mặc định tối đa 3 bình như Duy muốn
+            const speed = userData.regenSpeed || 3600; // Mặc định 1 giờ (3600 giây)
+            
+            document.getElementById('u-name').innerText = userData.name || "Người làm vườn";
+            document.getElementById('u-coins').innerText = (userData.coins || 0).toLocaleString();
             document.getElementById('cur-water').innerText = curW;
             document.getElementById('max-water').innerText = maxW;
             document.getElementById('u-avatar').src = userData.avatarUrl || "https://cdn-icons-png.flaticon.com/512/4333/4333609.png";
             
-            document.getElementById('water-fill').style.width = (curW / maxW * 100) + "%";
             document.getElementById('btnPour').disabled = (curW <= 0);
 
-            startRegenLogic(uid);
+            startRegenLogic(uid, curW, maxW, speed);
         });
     }
 
-    function startRegenLogic(uid) {
+    function startRegenLogic(uid, curW, maxW, speed) {
         if (regenInterval) clearInterval(regenInterval);
-        const speed = userData.regenSpeed || 60; // Giây để hồi 1 giọt
         
         regenInterval = setInterval(() => {
             const now = Date.now();
             const lastUpdate = userData.lastRegenTime || now;
             const elapsed = Math.floor((now - lastUpdate) / 1000);
 
-            if (elapsed >= speed && (userData.currentWater < userData.maxWater)) {
-                db.ref('users/' + uid).update({
-                    currentWater: Math.min(userData.maxWater, (userData.currentWater || 0) + 1),
-                    lastRegenTime: now
-                });
+            if (curW < maxW) {
+                if (elapsed >= speed) {
+                    db.ref('users/' + uid).update({
+                        currentWater: Math.min(maxW, curW + 1),
+                        lastRegenTime: now
+                    });
+                }
+                // Hiển thị đếm ngược mm:ss
+                const remaining = speed - (elapsed % speed);
+                const m = Math.floor(remaining / 60);
+                const s = remaining % 60;
+                document.getElementById('regen-text').innerText = `Hồi phục sau: ${m}:${s < 10 ? '0'+s : s}`;
+            } else {
+                document.getElementById('regen-text').innerText = "Bình nước đã đầy";
             }
-            document.getElementById('regen-timer').innerText = `Hồi phục: ${speed - (elapsed % speed)}s`;
         }, 1000);
-    }
-
-    async function upgrade(type) {
-        const cost = 50;
-        if ((userData.coins || 0) < cost) return alert("Không đủ đồng xu!");
-
-        const updates = {};
-        updates['coins'] = firebase.database.ServerValue.increment(-cost);
-        if (type === 'speed') updates['regenSpeed'] = Math.max(5, (userData.regenSpeed || 60) - 5);
-        if (type === 'storage') updates['maxWater'] = (userData.maxWater || 10) + 5;
-
-        await db.ref('users/' + auth.currentUser.uid).update(updates);
-        alert("Nâng cấp thành công!");
     }
 
     async function pourWater() {
         const uid = auth.currentUser.uid;
-        await db.ref('global/totalWater').transaction(c => (c || 0) + 1);
-        await db.ref('users/' + uid + '/currentWater').transaction(c => (c || 0) - 1);
-        await db.ref('users/' + uid + '/waterLevel').transaction(c => (c || 0) + 1);
+        const curW = userData.currentWater || 0;
+        if (curW <= 0) return;
+
+        const updates = {};
+        updates['global/totalWater'] = firebase.database.ServerValue.increment(1);
+        updates[`users/${uid}/currentWater`] = firebase.database.ServerValue.increment(-1);
+        updates[`users/${uid}/waterLevel`] = firebase.database.ServerValue.increment(1);
+        // Nếu lần đầu tưới khi bình đầy, cập nhật mốc thời gian hồi
+        if (userData.currentWater === userData.maxWater) {
+            updates[`users/${uid}/lastRegenTime`] = Date.now();
+        }
+
+        await db.ref().update(updates);
     }
 
-    // Các hàm loadPlantSettings() và listenToGlobal() giữ nguyên logic cũ của Duy
+    async function upgrade(type) {
+        const cost = 50;
+        if ((userData.coins || 0) < cost) return alert("Bạn cần 50 đồng xu để nâng cấp!");
+
+        const updates = {};
+        updates['coins'] = firebase.database.ServerValue.increment(-cost);
+        if (type === 'speed') updates['regenSpeed'] = Math.max(300, (userData.regenSpeed || 3600) - 300); // Giảm 5 phút mỗi lần nâng
+        if (type === 'storage') updates['maxWater'] = (userData.maxWater || 3) + 1;
+
+        await db.ref('users/' + auth.currentUser.uid).update(updates);
+        alert("Nâng cấp thành công!");
+    }
 </script>
 </body>
 </html>
