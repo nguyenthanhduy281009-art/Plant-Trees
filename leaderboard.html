@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Xếp Hạng - Plantrees</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f1f8e9; --primary: #2e7d32; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); padding-bottom: 80px; }
+        .header-top { background: white; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .header-top h1 { font-family: 'Luckiest Guy'; color: var(--primary); margin: 0; font-size: 28px; }
+
+        .list-container { padding: 15px; max-width: 500px; margin: auto; }
+        .rank-item { 
+            background: white; border-radius: 15px; padding: 12px 15px; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            border: 1px solid #eee;
+        }
+        .rank-number { font-family: 'Luckiest Guy'; font-size: 20px; width: 30px; color: #999; }
+        .top-1 { border: 2px solid #ffd700; } .top-1 .rank-number { color: #ffd700; }
+        .top-2 { border: 2px solid #c0c0c0; } .top-2 .rank-number { color: #c0c0c0; }
+        .top-3 { border: 2px solid #cd7f32; } .top-3 .rank-number { color: #cd7f32; }
+
+        .avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #f0f0f0; }
+        .info { flex: 1; }
+        .name { font-weight: bold; font-size: 14px; color: #333; }
+        .score { font-size: 12px; color: #666; font-weight: 600; }
+        .water-icon { color: #0288d1; }
+
+        /* Menu dưới giống trang Garden */
+        .footer-nav { width: 100%; display: flex; justify-content: space-around; align-items: center; background: #ffffff; border-top: 2px solid #f0f0f0; position: fixed; bottom: 0; left: 0; padding: 12px 0 25px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); }
+        .nav-link { text-align: center; text-decoration: none; color: #b0b0b0; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .nav-link i { font-size: 22px; }
+        .nav-link span { font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .nav-link.active { color: #2e7d32; }
+    </style>
+</head>
+<body>
+
+<div class="header-top">
+    <h1>TOP DŨNG SĨ DIỆT HẠN</h1>
+</div>
+
+<div class="list-container" id="leaderboard-list">
+    <div style="text-align: center; padding: 20px; color: #999;">Đang tìm kiếm cao thủ...</div>
+</div>
+
+<div class="footer-nav">
+    <a href="garden.html" class="nav-link"><i class="fas fa-seedling"></i><span>Khu Vườn</span></a>
+    <a href="tasks.html" class="nav-link"><i class="fas fa-tasks"></i><span>Nhiệm Vụ</span></a>
+    <a href="leaderboard.html" class="nav-link active"><i class="fas fa-trophy"></i><span>Xếp Hạng</span></a>
+</div>
+
+<script>
+    // DÙNG CHUNG CONFIG VỚI FILE GARDEN CỦA DUY
+    const firebaseConfig = {
+        apiKey: "AIzaSyAASOFywyAkx2G7ubR_XsODI1U2x7mSMpE",
+        authDomain: "plantrees-b1d99.firebaseapp.com",
+        databaseURL: "https://plantrees-b1d99-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "plantrees-b1d99",
+        storageBucket: "plantrees-b1d99.firebasestorage.app",
+        messagingSenderId: "208821406000",
+        appId: "1:208821406000:web:b4fac89c9a2f65d739e0f5"
+    };
+    
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Hàm lấy Top 10
+    function loadLeaderboard() {
+        // Lấy dữ liệu user sắp xếp theo waterLevel, giới hạn 10 người cao nhất
+        db.ref('users').orderByChild('waterLevel').limitToLast(10).on('value', (snapshot) => {
+            const listData = [];
+            snapshot.forEach(child => {
+                listData.push(child.val());
+            });
+
+            // Firebase sắp xếp từ thấp đến cao nên mình phải đảo ngược lại
+            listData.reverse();
+
+            renderList(listData);
+        });
+    }
+
+    function renderList(users) {
+        const container = document.getElementById('leaderboard-list');
+        container.innerHTML = '';
+
+        users.forEach((user, index) => {
+            const rank = index + 1;
+            const topClass = rank <= 3 ? `top-${rank}` : '';
+            const avatar = user.avatarUrl || 'https://cdn-icons-png.flaticon.com/512/4333/4333609.png';
+            
+            container.innerHTML += `
+                <div class="rank-item ${topClass}">
+                    <div class="rank-number">${rank}</div>
+                    <img src="${avatar}" class="avatar">
+                    <div class="info">
+                        <div class="name">${user.name || 'Người ẩn danh'}</div>
+                        <div class="score">Đã tưới: ${user.waterLevel || 0} <i class="fas fa-tint water-icon"></i></div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    loadLeaderboard();
+</script>
+
+</body>
+</html>
