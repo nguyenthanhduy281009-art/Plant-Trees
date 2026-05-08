@@ -133,6 +133,17 @@
         } else { window.location.href = "auth.html"; }
     });
 
+    function getDirectLink(url) {
+    if (url && url.includes('drive.google.com')) {
+        const parts = url.split('/d/');
+        if (parts.length > 1) {
+            const id = parts[1].split('/')[0];
+            return `https://lh3.googleusercontent.com/d/${id}`;
+        }
+    }
+    return url;
+}
+    
     function loadPlantSettings() {
         db.ref('settings/plants').on('value', s => {
             plantSettings = [];
@@ -205,8 +216,9 @@ function renderPlant(totalGlobal) {
     let currentStage = null;
     let stageRequired = 0;
     let stageCurrent = 0;
-    let currentStageIndex = 0; // Thêm biến này để biết đang ở giai đoạn thứ mấy
+    let currentStageIndex = 0;
 
+    // Logic tính toán cây và giai đoạn hiện tại
     for (let i = 0; i < allPlants.length; i++) {
         let plant = allPlants[i];
         let plantTotalWater = plant.stages.reduce((sum, st) => sum + st.required_water, 0);
@@ -219,7 +231,7 @@ function renderPlant(totalGlobal) {
                     currentStage = st;
                     stageRequired = st.required_water;
                     stageCurrent = waterPool;
-                    currentStageIndex = j; // Lưu lại vị trí giai đoạn (0, 1, 2...)
+                    currentStageIndex = j;
                     break;
                 } else {
                     waterPool -= st.required_water;
@@ -231,40 +243,30 @@ function renderPlant(totalGlobal) {
         }
     }
 
-    // 1. Hàm phụ để "ép" link Google Drive thành link ảnh trực tiếp
-function getDirectLink(url) {
-    if (url.includes('drive.google.com')) {
-        const id = url.split('/d/')[1].split('/')[0];
-        return `https://lh3.googleusercontent.com/d/${id}`;
-    }
-    return url;
-}
+    // Hiển thị lên màn hình
+    if (currentPlant && currentStage) {
+        const display = document.getElementById('tree-display');
+        const totalStages = currentPlant.stages.length;
+        
+        // Tỉ lệ scale: Giai đoạn 1 là 60%, to dần đến 100% ở giai đoạn cuối
+        const scaleValue = 0.6 + (currentStageIndex / (totalStages - 1 || 1)) * 0.4;
+        const imgUrl = getDirectLink(currentStage.image);
 
-// 2. Trong phần hiển thị của renderPlant, Duy sửa lại như sau:
-if (currentPlant && currentStage) {
-    const display = document.getElementById('tree-display');
-    const totalStages = currentPlant.stages.length;
-    
-    // TÍNH TOÁN KÍCH THƯỚC: Giai đoạn 1 bắt đầu từ 50%, lớn dần đến 100%
-    const scaleValue = 0.5 + (currentStageIndex / (totalStages - 1 || 1)) * 0.5;
-    
-    // Ép link ảnh
-    const imgUrl = getDirectLink(currentStage.image);
-
-    if (imgUrl.includes('http')) {
-        display.innerHTML = `
-            <img src="${imgUrl}" 
-                 style="height: 220px; 
-                        transform: scale(${scaleValue}); 
-                        transform-origin: bottom; 
-                        transition: all 0.8s ease-out; 
-                        object-fit: contain;"
-                 onerror="this.src='https://cdn-icons-png.flaticon.com/512/628/628283.png'">`; // Ảnh dự phòng nếu link hỏng
-    } else {
-        display.innerHTML = `<div style="font-size: ${100 * scaleValue}px;">${currentStage.image}</div>`;
-    }
-    // ... các phần còn lại giữ nguyên
-}
+        if (imgUrl.includes('http')) {
+            display.innerHTML = `
+                <img src="${imgUrl}" 
+                     style="height: 220px; 
+                            transform: scale(${scaleValue}); 
+                            transform-origin: bottom; 
+                            transition: all 0.5s ease-out; 
+                            object-fit: contain;"
+                     onerror="this.src='https://cdn-icons-png.flaticon.com/512/628/628283.png'">`;
+        } else {
+            display.innerHTML = `
+                <div style="font-size: ${100 * scaleValue}px; transform-origin: bottom;">
+                    ${currentStage.image}
+                </div>`;
+        }
 
         document.getElementById('stage-name').innerText = currentPlant.name;
         const percent = Math.min((stageCurrent / stageRequired) * 100, 100);
