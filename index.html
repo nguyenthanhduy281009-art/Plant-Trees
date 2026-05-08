@@ -231,31 +231,40 @@ function renderPlant(totalGlobal) {
         }
     }
 
-    // 3. Hiển thị lên màn hình với logic tự chia tỉ lệ kích thước
-    if (currentPlant && currentStage) {
-        const display = document.getElementById('tree-display');
-        
-        // TỰ ĐỘNG CHIA: (Số thứ tự giai đoạn hiện tại + 1) / Tổng số giai đoạn
-        // Ví dụ: 4 giai đoạn thì GĐ 1 là 1/4 (25%), GĐ 4 là 4/4 (100%)
-        const totalStages = currentPlant.stages.length;
-        const scaleValue = (currentStageIndex + 1) / totalStages;
+    // 1. Hàm phụ để "ép" link Google Drive thành link ảnh trực tiếp
+function getDirectLink(url) {
+    if (url.includes('drive.google.com')) {
+        const id = url.split('/d/')[1].split('/')[0];
+        return `https://lh3.googleusercontent.com/d/${id}`;
+    }
+    return url;
+}
 
-        if (currentStage.image.includes('http')) {
-            display.innerHTML = `
-                <img src="${currentStage.image}" 
-                     style="height: 220px; 
-                            transform: scale(${scaleValue}); 
-                            transform-origin: bottom; 
-                            transition: transform 0.5s ease-out; 
-                            object-fit: contain;">`;
-        } else {
-            display.innerHTML = `
-                <div style="font-size: ${100 * scaleValue}px; 
-                            transform-origin: bottom; 
-                            transition: all 0.5s ease;">
-                    ${currentStage.image}
-                </div>`;
-        }
+// 2. Trong phần hiển thị của renderPlant, Duy sửa lại như sau:
+if (currentPlant && currentStage) {
+    const display = document.getElementById('tree-display');
+    const totalStages = currentPlant.stages.length;
+    
+    // TÍNH TOÁN KÍCH THƯỚC: Giai đoạn 1 bắt đầu từ 50%, lớn dần đến 100%
+    const scaleValue = 0.5 + (currentStageIndex / (totalStages - 1 || 1)) * 0.5;
+    
+    // Ép link ảnh
+    const imgUrl = getDirectLink(currentStage.image);
+
+    if (imgUrl.includes('http')) {
+        display.innerHTML = `
+            <img src="${imgUrl}" 
+                 style="height: 220px; 
+                        transform: scale(${scaleValue}); 
+                        transform-origin: bottom; 
+                        transition: all 0.8s ease-out; 
+                        object-fit: contain;"
+                 onerror="this.src='https://cdn-icons-png.flaticon.com/512/628/628283.png'">`; // Ảnh dự phòng nếu link hỏng
+    } else {
+        display.innerHTML = `<div style="font-size: ${100 * scaleValue}px;">${currentStage.image}</div>`;
+    }
+    // ... các phần còn lại giữ nguyên
+}
 
         document.getElementById('stage-name').innerText = currentPlant.name;
         const percent = Math.min((stageCurrent / stageRequired) * 100, 100);
