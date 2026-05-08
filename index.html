@@ -205,6 +205,7 @@ function renderPlant(totalGlobal) {
     let currentStage = null;
     let stageRequired = 0;
     let stageCurrent = 0;
+    let currentStageIndex = 0; // Thêm biến này để biết đang ở giai đoạn thứ mấy
 
     for (let i = 0; i < allPlants.length; i++) {
         let plant = allPlants[i];
@@ -218,6 +219,7 @@ function renderPlant(totalGlobal) {
                     currentStage = st;
                     stageRequired = st.required_water;
                     stageCurrent = waterPool;
+                    currentStageIndex = j; // Lưu lại vị trí giai đoạn (0, 1, 2...)
                     break;
                 } else {
                     waterPool -= st.required_water;
@@ -229,6 +231,38 @@ function renderPlant(totalGlobal) {
         }
     }
 
+    // 3. Hiển thị lên màn hình với logic tự chia tỉ lệ kích thước
+    if (currentPlant && currentStage) {
+        const display = document.getElementById('tree-display');
+        
+        // TỰ ĐỘNG CHIA: (Số thứ tự giai đoạn hiện tại + 1) / Tổng số giai đoạn
+        // Ví dụ: 4 giai đoạn thì GĐ 1 là 1/4 (25%), GĐ 4 là 4/4 (100%)
+        const totalStages = currentPlant.stages.length;
+        const scaleValue = (currentStageIndex + 1) / totalStages;
+
+        if (currentStage.image.includes('http')) {
+            display.innerHTML = `
+                <img src="${currentStage.image}" 
+                     style="height: 220px; 
+                            transform: scale(${scaleValue}); 
+                            transform-origin: bottom; 
+                            transition: transform 0.5s ease-out; 
+                            object-fit: contain;">`;
+        } else {
+            display.innerHTML = `
+                <div style="font-size: ${100 * scaleValue}px; 
+                            transform-origin: bottom; 
+                            transition: all 0.5s ease;">
+                    ${currentStage.image}
+                </div>`;
+        }
+
+        document.getElementById('stage-name').innerText = currentPlant.name;
+        const percent = Math.min((stageCurrent / stageRequired) * 100, 100);
+        document.getElementById('progress-bar').style.width = percent + "%";
+        document.getElementById('water-ratio').innerText = `${stageCurrent} / ${stageRequired}`;
+    }
+}
     // 3. Hiển thị lên màn hình (Khớp với cái HTML Tree-container của Duy)
     if (currentPlant && currentStage) {
         const display = document.getElementById('tree-display');
