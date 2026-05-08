@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plantrees - Thử Thách Hít Đất</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #2e7d32; --bg: #f1f8e9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; overflow-x: hidden; }
+        .container { max-width: 500px; margin: auto; padding: 20px; text-align: center; }
+        h1 { font-family: 'Luckiest Guy'; color: var(--primary); }
+        
+        #video-container { position: relative; width: 100%; border-radius: 20px; overflow: hidden; background: #000; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        video { width: 100%; height: auto; transform: scaleX(-1); } /* Quay gương cho dễ nhìn */
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+
+        .counter-box { display: flex; justify-content: space-around; margin: 20px 0; }
+        .stat-card { background: white; padding: 15px; border-radius: 15px; flex: 1; margin: 0 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .stat-value { font-family: 'Luckiest Guy'; font-size: 35px; color: #333; }
+        .stat-label { font-size: 12px; color: #888; }
+
+        .btn-control {
+            background: var(--primary); color: white; border: none; padding: 15px;
+            border-radius: 50px; font-family: 'Luckiest Guy'; font-size: 18px;
+            cursor: pointer; width: 100%; box-shadow: 0 5px 0 #1b5e20;
+        }
+        #status { margin-top: 10px; font-style: italic; color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>💪 HÍT ĐẤT NHẬN XU</h1>
+
+    <div id="video-container">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="output_canvas"></canvas>
+    </div>
+
+    <div class="counter-box">
+        <div class="stat-card">
+            <div class="stat-value" id="pushup-count">0</div>
+            <div class="stat-label">LẦN HÍT</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="coins-earned" style="color: #fbc02d;">0</div>
+            <div class="stat-label">XU NHẬN ĐƯỢC</div>
+        </div>
+    </div>
+
+    <p id="status">Đang khởi tạo AI... Vui lòng đợi</p>
+
+    <button class="btn-control" style="background: #888; box-shadow: 0 5px 0 #666;" onclick="goBack()">QUAY LẠI</button>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAASOFywyAkx2G7ubR_XsODI1U2x7mSMpE",
+        authDomain: "plantrees-b1d99.firebaseapp.com",
+        databaseURL: "https://plantrees-b1d99-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "plantrees-b1d99",
+        storageBucket: "plantrees-b1d99.firebasestorage.app",
+        messagingSenderId: "208821406000",
+        appId: "1:208821406000:web:b4fac89c9a2f65d739e0f5"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+
+    const video = document.getElementById('webcam');
+    const canvasElement = document.getElementById('output_canvas');
+    const canvasCtx = canvasElement.getContext('2d');
+    
+    let count = 0;
+    let coins = 0;
+    let stage = "up"; // Trạng thái: "up" (đang ở trên) hoặc "down" (đang hạ xuống)
+
+    async function setupCamera() {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        return new Promise((resolve) => {
+            video.onloadedmetadata = () => resolve(video);
+        });
+    }
+
+    async function main() {
+        await setupCamera();
+        const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet);
+        document.getElementById('status').innerText = "Hãy đặt điện thoại sao cho thấy rõ toàn thân nghiêng!";
+
+        async function detect() {
+            const poses = await detector.estimatePoses(video);
+            
+            if (poses.length > 0) {
+                const keypoints = poses[0].keypoints;
+                // Lấy tọa độ vai và khuỷu tay để tính toán
+                const leftShoulder = keypoints.find(k => k.name === 'left_shoulder');
+                const leftElbow = keypoints.find(k => k.name === 'left_elbow');
+                
+                if (leftShoulder && leftElbow && leftShoulder.score > 0.5) {
+                    // Logic đếm đơn giản: So sánh độ cao Y của vai và khuỷu tay
+                    if (leftShoulder.y > leftElbow.y + 30) {
+                        stage = "down";
+                    }
+                    if (leftShoulder.y < leftElbow.y && stage === "down") {
+                        stage = "up";
+                        count++;
+                        coins += 2;
+                        updateUI();
+                        saveToFirebase(2);
+                    }
+                }
+            }
+            requestAnimationFrame(detect);
+        }
+        detect();
+    }
+
+    function updateUI() {
+        document.getElementById('pushup-count').innerText = count;
+        document.getElementById('coins-earned').innerText = coins;
+    }
+
+    async function saveToFirebase(amount) {
+        const user = auth.currentUser;
+        if (user) {
+            await db.ref(`users/${user.uid}/coins`).set(firebase.database.ServerValue.increment(amount));
+        }
+    }
+
+    function goBack() {
+        if (confirm(`Bạn đã hít đất được ${count} lần và nhận ${coins} xu. Quay lại vườn nhé?`)) {
+            location.href = 'tasks.html';
+        }
+    }
+
+    main();
+</script>
+</body>
+</html>
