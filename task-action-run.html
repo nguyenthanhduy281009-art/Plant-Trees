@@ -105,7 +105,7 @@
             if (lastCoords) {
                 const dist = calculateDistance(lastCoords.latitude, lastCoords.longitude, latitude, longitude);
 
-                if (dist >= 1) {
+                if (dist >= 2) {
                     totalDistance += dist;
                     const newCoins = Math.floor(dist / 2);
                     if (newCoins > 0) {
