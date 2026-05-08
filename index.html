@@ -277,7 +277,7 @@ function renderPlant(totalGlobal) {
         document.getElementById('progress-bar').style.width = percent + "%";
         document.getElementById('water-ratio').innerText = `${stageCurrent} / ${stageRequired}`;
     }
-}
+
     function startRegenLogic(uid, curW, maxW, speed) {
         if (regenInterval) clearInterval(regenInterval);
         regenInterval = setInterval(() => {
