@@ -166,24 +166,43 @@
         }, 1000);
     }
 
-    async function pourWater() {
-        const uid = auth.currentUser.uid;
-        const btn = document.getElementById('btnPour');
-        if (!userData || userData.currentWater <= 0) return;
+   async function pourWater() {
+    const uid = auth.currentUser.uid;
+    const btn = document.getElementById('btnPour');
+    
+    // 1. Kiểm tra ngay lập tức nếu dữ liệu chưa tải xong hoặc không có nước
+    if (!userData || userData.currentWater === undefined || userData.currentWater <= 0) {
         btn.disabled = true;
-        try {
-            const updates = {};
-            updates['global/totalWater'] = firebase.database.ServerValue.increment(1);
-            updates[`users/${uid}/currentWater`] = firebase.database.ServerValue.increment(-1);
-            if (userData.currentWater === userData.maxWater) { updates[`users/${uid}/lastRegenTime`] = Date.now(); }
-            await db.ref().update(updates);
-            const treeImg = document.querySelector('#tree-display img');
-            if(treeImg) {
-                treeImg.style.transform = "scale(1.1) rotate(5deg)";
-                setTimeout(() => treeImg.style.transform = "scale(1) rotate(0deg)", 200);
-            }
-        } catch(e) { btn.disabled = false; }
+        return;
     }
+
+    btn.disabled = true; // Vô hiệu hóa nút ngay khi bấm để tránh spam
+
+    try {
+        const updates = {};
+        updates['global/totalWater'] = firebase.database.ServerValue.increment(1);
+        updates[`users/${uid}/currentWater`] = firebase.database.ServerValue.increment(-1);
+        updates[`users/${uid}/waterLevel`] = firebase.database.ServerValue.increment(1);
+
+        // Cập nhật mốc thời gian hồi nước nếu bình đang đầy mà bị trừ đi
+        if (userData.currentWater === userData.maxWater) {
+            updates[`users/${uid}/lastRegenTime`] = Date.now();
+        }
+
+        await db.ref().update(updates);
+        
+        // Tạo hiệu ứng rung cây khi tưới thành công
+        const treeImg = document.querySelector('#tree-container img');
+        if(treeImg) {
+            treeImg.style.transform = "scale(1.1) rotate(5deg)";
+            setTimeout(() => treeImg.style.transform = "scale(1) rotate(0deg)", 200);
+        }
+
+    } catch(e) {
+        console.error("Lỗi tưới nước:", e);
+        btn.disabled = false;
+    }
+}
 
     async function upgrade(type) {
         const cost = 50;
