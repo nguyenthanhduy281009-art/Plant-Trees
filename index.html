@@ -335,7 +335,7 @@ function renderPlant(totalGlobal) {
         const currentRegen = userData.regenSpeed || 3600;
 
         if (currentRegen <= 50) return alert("Tốc độ hồi nước đã đạt tối đa!");
-        if (currentCoins < cost) return alert(`Duy cần ${cost} xu để nâng cấp!`);
+        if (currentCoins < cost) return alert(`Bạn cần ${cost} xu để nâng cấp!`);
 
         updates['speedLevel'] = speedLv + 1;
         // Giảm 50 giây cho mỗi cấp, không thấp hơn 50 giây
@@ -343,7 +343,7 @@ function renderPlant(totalGlobal) {
     } 
     else if (type === 'storage') {
         cost = 100 + (storageLv - 1) * 50;
-        if (currentCoins < cost) return alert(`Duy cần ${cost} xu để nâng cấp!`);
+        if (currentCoins < cost) return alert(`Bạn cần ${cost} xu để nâng cấp!`);
 
         updates['storageLevel'] = storageLv + 1;
         updates['maxWater'] = (userData.maxWater || 3) + 1;
