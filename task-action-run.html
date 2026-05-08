@@ -78,10 +78,10 @@
             document.getElementById('status').innerText = "Đang kết nối vệ tinh...";
 
             watchID = navigator.geolocation.watchPosition(updatePosition, handleError, {
-                enableHighAccuracy: true,
-                maximumAge: 0
-            });
-        }
+    enableHighAccuracy: true, // Ép dùng GPS chính xác nhất
+    maximumAge: 0,            // Không dùng dữ liệu cũ trong bộ nhớ đệm
+    timeout: 5000             // Sau 5 giây nếu không lấy được tọa độ thì thử lại ngay
+});
 
         async function updatePosition(position) {
             const { latitude, longitude, speed } = position.coords;
@@ -98,7 +98,7 @@
                 const dist = calculateDistance(lastCoords.latitude, lastCoords.longitude, latitude, longitude);
 
                 // Chỉ tính nếu di chuyển trên 2m để tránh nhiễu GPS đứng yên
-                if (dist >= 2) {
+                if (dist >= 0.8) {
                     totalDistance += dist;
                     
                     // Cơ chế: 2m = 1 xu
