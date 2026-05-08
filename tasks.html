@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plantrees - Nhiệm Vụ</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #2e7d32; --bg: #f1f8e9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        h1 { font-family: 'Luckiest Guy'; color: var(--primary); text-align: center; }
+
+        .task-container { max-width: 500px; margin: auto; }
+
+        /* Style từng dòng nhiệm vụ */
+        .task-item {
+            background: white; border-radius: 15px; margin-bottom: 10px;
+            overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transition: 0.3s;
+        }
+
+        .task-header {
+            padding: 15px; display: flex; align-items: center; gap: 12px; cursor: pointer;
+        }
+
+        .task-info { flex: 1; font-weight: bold; color: #333; }
+        
+        .arrow-icon { transition: transform 0.3s; color: #999; }
+        .active .arrow-icon { transform: rotate(180deg); }
+
+        /* Phần chi tiết bị ẩn */
+        .task-detail {
+            max-height: 0; padding: 0 15px; background: #fafafa;
+            transition: all 0.3s ease-out; opacity: 0;
+        }
+
+        .active .task-detail {
+            max-height: 300px; padding: 15px; opacity: 1; border-top: 1px solid #eee;
+        }
+
+        .btn-go {
+            background: var(--primary); color: white; border: none; padding: 10px 20px;
+            border-radius: 50px; font-family: 'Luckiest Guy'; width: 100%; margin-top: 10px;
+            cursor: pointer; box-shadow: 0 4px 0 #1b5e20;
+        }
+
+        .btn-back {
+            background: #888; color: white; border: none; padding: 15px;
+            border-radius: 50px; font-family: 'Luckiest Guy'; width: 100%;
+            margin-top: 20px; cursor: pointer; box-shadow: 0 4px 0 #666;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>DANH SÁCH NHIỆM VỤ</h1>
+
+    <div class="task-container">
+        <div class="task-item">
+            <div class="task-header" onclick="toggleTask(this)">
+                <span style="font-size: 25px;">🏃</span>
+                <div class="task-info">Dũng sĩ chạy bộ (500m)</div>
+                <i class="fas fa-chevron-down arrow-icon"></i>
+            </div>
+            <div class="task-detail">
+                <p style="font-size: 13px; color: #666; margin: 0;">
+                    <b>Luật chơi:</b> Mày phải cầm điện thoại di chuyển đủ 500m ngoài trời. Hệ thống sẽ dùng GPS để đo quãng đường thực tế. <br>
+                    <b>Phần thưởng:</b> 100 xu.
+                </p>
+                <button class="btn-go" onclick="location.href='task-action-run.html'">THỰC HIỆN</button>
+            </div>
+        </div>
+
+        <div class="task-item">
+            <div class="task-header" onclick="toggleTask(this)">
+                <span style="font-size: 25px;">💧</span>
+                <div class="task-info">Chăm chỉ mỗi ngày</div>
+                <i class="fas fa-chevron-down arrow-icon"></i>
+            </div>
+            <div class="task-detail">
+                <p style="font-size: 13px; color: #666; margin: 0;">
+                    <b>Luật chơi:</b> Đăng nhập vào khu vườn liên tục trong 7 ngày để nhận thưởng lớn.
+                </p>
+                <button class="btn-go" style="background: #ccc; box-shadow: none;">CHƯA MỞ</button>
+            </div>
+        </div>
+
+        <button class="btn-back" onclick="location.href='garden.html'">QUAY LẠI VƯỜN</button>
+    </div>
+
+    <script>
+        function toggleTask(element) {
+            const parent = element.parentElement;
+            // Đóng các cái khác nếu đang mở (tùy chọn)
+            document.querySelectorAll('.task-item').forEach(item => {
+                if(item !== parent) item.classList.remove('active');
+            });
+            // Bật/tắt cái hiện tại
+            parent.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
