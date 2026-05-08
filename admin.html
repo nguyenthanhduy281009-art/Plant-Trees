@@ -2,39 +2,77 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Quản Lý Cây Trồng</title>
+    <title>Admin - Cấu Hình Cây Trồng</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
-        .login-box { max-width: 300px; margin: 100px auto; text-align: center; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .admin-panel { display: none; max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
-        .plant-card { border: 2px solid #e0e0e0; padding: 15px; margin-bottom: 20px; border-radius: 10px; background: #fafafa; }
-        .stage-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background: #eee; padding: 10px; border-radius: 5px; }
-        input { padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
-        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .btn-add { background: #2e7d32; color: white; }
-        .btn-save { background: #0288d1; color: white; width: 100%; margin-top: 20px; font-size: 16px; }
-        .btn-del { background: #d32f2f; color: white; padding: 5px 10px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eceff1; padding: 20px; color: #37474f; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #2e7d32; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input { width: 100%; padding: 10px; border: 1px solid #cfd8dc; border-radius: 8px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; margin-top: 10px; }
+        .btn-next { background: #2e7d32; color: white; }
+        .btn-finish { background: #0288d1; color: white; }
+        .btn-next:hover { background: #1b5e20; }
+        
+        /* Bảng danh sách cây */
+        .total-list { margin-top: 40px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; font-size: 14px; }
+        th { background: #f8f9fa; color: #2e7d32; }
+        .img-preview { width: 30px; height: 30px; object-fit: cover; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-<div id="login-section" class="login-box">
-    <h3>Nhập mã Admin</h3>
-    <input type="password" id="admin-pass" placeholder="Mật khẩu...">
-    <button class="btn btn-add" style="margin-top:10px" onclick="checkPass()">Vào hệ thống</button>
+<div class="container" id="admin-app">
+    <h2>🍀 CẤU HÌNH CÂY MỚI</h2>
+
+    <div id="step-1">
+        <div class="form-group">
+            <label>Tên loại cây:</label>
+            <input type="text" id="p-name" placeholder="Ví dụ: Cây Sầu Riêng">
+        </div>
+        <div class="form-group">
+            <label>Cây này có bao nhiêu giai đoạn (Level)?</label>
+            <input type="number" id="p-stages-count" placeholder="Nhập số lượng giai đoạn...">
+        </div>
+        <button class="btn btn-next" onclick="startInputStages()">BẮT ĐẦU NHẬP CHI TIẾT</button>
+    </div>
+
+    <div id="step-2" style="display: none;">
+        <h3 id="current-stage-title" style="color: #0288d1;">Nhập Giai Đoạn 1</h3>
+        <div class="form-group">
+            <label>Link ảnh hoặc Emoji:</label>
+            <input type="text" id="s-img" placeholder="Dán link ảnh hoặc 🌱">
+        </div>
+        <div class="form-group">
+            <label>Số giọt nước cần để đạt cấp này:</label>
+            <input type="number" id="s-water" placeholder="Ví dụ: 100">
+        </div>
+        <button id="btn-action" class="btn btn-next" onclick="nextStage()">TIẾP TỤC</button>
+    </div>
 </div>
 
-<div id="admin-section" class="admin-panel">
-    <h2>Quản lý danh sách cây</h2>
-    <div id="plant-list"></div>
-    <button class="btn btn-add" onclick="addNewPlant()">+ Thêm loại cây mới</button>
-    <button class="btn btn-save" onclick="saveToFirebase()">LƯU TẤT CẢ LÊN CLOUD ☁️</button>
+<div class="container total-list">
+    <h3 style="margin-top: 0;">📋 CHI TIẾT DANH SÁCH CÂY ĐÃ LÊN</h3>
+    <table id="all-plants-table">
+        <thead>
+            <tr>
+                <th>Tên cây</th>
+                <th>Số GĐ</th>
+                <th>Giai đoạn cuối</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            </tbody>
+    </table>
 </div>
 
 <script>
-    // Dán Config Firebase của Duy vào đây
     const firebaseConfig = {
         apiKey: "AIzaSyAASOFywyAkx2G7ubR_XsODI1U2x7mSMpE",
         authDomain: "plantrees-b1d99.firebaseapp.com",
@@ -47,71 +85,96 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    function checkPass() {
-        const pass = document.getElementById('admin-pass').value;
-        if(pass === "829135") {
-            document.getElementById('login-section').style.display = 'none';
-            document.getElementById('admin-section').style.display = 'block';
-            loadCurrentData();
-        } else { alert("Sai mật khẩu rồi Duy ơi!"); }
+    let tempName = "";
+    let totalStages = 0;
+    let currentStageIndex = 1;
+    let gatheredStages = [];
+
+    // Bước 1 -> Bước 2
+    function startInputStages() {
+        tempName = document.getElementById('p-name').value;
+        totalStages = parseInt(document.getElementById('p-stages-count').value);
+
+        if(!tempName || isNaN(totalStages) || totalStages <= 0) {
+            return alert("Duy vui lòng nhập đủ tên và số giai đoạn!");
+        }
+
+        document.getElementById('step-1').style.display = 'none';
+        document.getElementById('step-2').style.display = 'block';
+        updateStageUI();
     }
 
-    function addNewPlant() {
-        const id = Date.now();
-        const html = `
-            <div class="plant-card" id="plant-${id}">
-                <input type="text" placeholder="Tên cây (Ví dụ: Cây Ổi)" class="p-name" style="width:90%; margin-bottom:10px; font-weight:bold;">
-                <div class="stages-container"></div>
-                <button class="btn btn-add" onclick="addStage('${id}')">+ Thêm giai đoạn</button>
-                <button class="btn btn-del" onclick="document.getElementById('plant-${id}').remove()">Xóa cây</button>
-            </div>`;
-        document.getElementById('plant-list').insertAdjacentHTML('beforeend', html);
+    // Xử lý chuyển giai đoạn
+    function nextStage() {
+        const img = document.getElementById('s-img').value;
+        const water = document.getElementById('s-water').value;
+
+        if(!img || !water) return alert("Nhập đủ thông tin giai đoạn này đã Duy ơi!");
+
+        gatheredStages.push({ image: img, required_water: parseInt(water) });
+
+        if(currentStageIndex < totalStages) {
+            currentStageIndex++;
+            document.getElementById('s-img').value = "";
+            document.getElementById('s-water').value = "";
+            updateStageUI();
+        } else {
+            finishAndUpload();
+        }
     }
 
-    function addStage(plantId, img = '', water = '') {
-        const container = document.querySelector(`#plant-${plantId} .stages-container`);
-        const html = `
-            <div class="stage-row">
-                <span>Ảnh:</span><input type="text" placeholder="Link ảnh (http...)" class="s-img" value="${img}" style="flex:2">
-                <span>Nước:</span><input type="number" placeholder="Số giọt" class="s-water" value="${water}" style="flex:1">
-                <button class="btn btn-del" onclick="this.parentElement.remove()">X</button>
-            </div>`;
-        container.insertAdjacentHTML('beforeend', html);
+    function updateStageUI() {
+        document.getElementById('current-stage-title').innerText = `Nhập Giai Đoạn ${currentStageIndex} / ${totalStages}`;
+        if(currentStageIndex === totalStages) {
+            const btn = document.getElementById('btn-action');
+            btn.innerText = "HOÀN TẤT & ĐƯA LÊN VƯỜN";
+            btn.className = "btn btn-finish";
+        }
     }
 
-    async function saveToFirebase() {
-        const plants = [];
-        document.querySelectorAll('.plant-card').forEach(card => {
-            const stages = [];
-            card.querySelectorAll('.stage-row').forEach(row => {
-                stages.push({
-                    image: row.querySelector('.s-img').value,
-                    required_water: parseInt(row.querySelector('.s-water').value)
-                });
+    async function finishAndUpload() {
+        try {
+            await db.ref('settings/plants_v2').push({
+                name: tempName,
+                stages: gatheredStages,
+                createdAt: Date.now()
             });
-            plants.push({
-                name: card.querySelector('.p-name').value,
-                stages: stages
-            });
-        });
-
-        await db.ref('settings/plants_v2').set(plants);
-        alert("Đã lưu thành công! Game sẽ tự cập nhật cây mới.");
+            alert("Chúc mừng Duy! Cây " + tempName + " đã chính thức lên vườn.");
+            location.reload();
+        } catch (e) { alert("Lỗi rồi: " + e.message); }
     }
 
-    function loadCurrentData() {
-        db.ref('settings/plants_v2').once('value', s => {
+    // Load danh sách tổng
+    function loadTable() {
+        db.ref('settings/plants_v2').on('value', s => {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = "";
             if(!s.exists()) return;
-            s.val().forEach(p => {
-                const id = Date.now() + Math.random();
-                addNewPlant();
-                const lastPlant = document.getElementById('plant-list').lastElementChild;
-                lastPlant.id = `plant-${id}`;
-                lastPlant.querySelector('.p-name').value = p.name;
-                p.stages.forEach(st => addStage(id, st.image, st.required_water));
+            
+            s.forEach(child => {
+                const data = child.val();
+                const lastStage = data.stages[data.stages.length - 1];
+                const row = `
+                    <tr>
+                        <td><b>${data.name}</b></td>
+                        <td>${data.stages.length}</td>
+                        <td>${lastStage.image.includes('http') ? `<img src="${lastStage.image}" class="img-preview">` : lastStage.image}</td>
+                        <td><button onclick="deletePlant('${child.key}')" style="color:red; border:none; background:none; cursor:pointer;">Xóa</button></td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
             });
         });
     }
+
+    async function deletePlant(id) {
+        if(confirm("Duy có chắc muốn xóa cây này khỏi danh sách không?")) {
+            await db.ref('settings/plants_v2/' + id).remove();
+        }
+    }
+
+    loadTable();
 </script>
+
 </body>
 </html>
