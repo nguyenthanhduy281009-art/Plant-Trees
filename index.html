@@ -91,9 +91,13 @@
     <div class="action-cluster">
         <button class="pour-btn" id="btnPour" onclick="pourWater()">TƯỚI NƯỚC 💧</button>
         <div class="upgrade-row">
-            <div class="up-card" onclick="upgrade('speed')">⚡ HỒI NHANH<br><span style="color: #f3ba2f;">50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span></div>
-            <div class="up-card" onclick="upgrade('storage')">📦 THÊM BÌNH<br><span style="color: #f3ba2f;">50 <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span></div>
-        </div>
+    <div class="up-card" onclick="upgrade('speed')">
+        ⚡ HỒI NHANH (Lv<span id="speed-lv">1</span>)<br>
+        <span style="color: #f3ba2f;"><span id="speed-cost">50</span> <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span>
+    </div>
+    <div class="up-card" onclick="upgrade('storage')">
+        📦 THÊM BÌNH (Lv<span id="storage-lv">1</span>)<br>
+        <span style="color: #f3ba2f;"><span id="storage-cost">100</span> <img src="https://drive.google.com/thumbnail?id=13GfXHlWxw_dlc3eWxlO4p5D5HY1n361H&sz=w100" width="10"></span>
     </div>
 </div>
 
@@ -138,23 +142,39 @@
     }
 
     function listenToUser(uid) {
-        db.ref('users/' + uid).on('value', s => {
-            userData = s.val() || {};
-            const curW = userData.currentWater !== undefined ? userData.currentWater : 0;
-            const maxW = userData.maxWater || 3;
-            const speed = userData.regenSpeed || 3600;
+    db.ref('users/' + uid).on('value', s => {
+        userData = s.val() || {};
+        const curW = userData.currentWater !== undefined ? userData.currentWater : 0;
+        const maxW = userData.maxWater || 3;
+        const speed = userData.regenSpeed || 3600;
 
-            document.getElementById('u-name').innerText = userData.name || "Người làm vườn";
-            document.getElementById('u-coins').innerText = (userData.coins || 0).toLocaleString();
-            document.getElementById('cur-water').innerText = curW;
-            document.getElementById('max-water').innerText = maxW;
-            if(userData.avatarUrl) document.getElementById('u-avatar').src = userData.avatarUrl;
-            
-            // QUAN TRỌNG: Mở khóa nút tưới ngay khi load nếu có nước
-            document.getElementById('btnPour').disabled = (curW <= 0);
-            startRegenLogic(uid, curW, maxW, speed);
-        });
-    }
+        // Cấp độ hiện tại (mặc định là 1)
+        const sLv = userData.speedLevel || 1;
+        const stLv = userData.storageLevel || 1;
+
+        // Hiển thị thông tin cơ bản
+        document.getElementById('u-name').innerText = userData.name || "Người làm vườn";
+        document.getElementById('u-coins').innerText = (userData.coins || 0).toLocaleString();
+        document.getElementById('cur-water').innerText = curW;
+        document.getElementById('max-water').innerText = maxW;
+        if(userData.avatarUrl) document.getElementById('u-avatar').src = userData.avatarUrl;
+        
+        // Cập nhật Level lên giao diện
+        document.getElementById('speed-lv').innerText = sLv;
+        document.getElementById('storage-lv').innerText = stLv;
+
+        // Cập nhật Giá tiền nâng cấp tiếp theo lên giao diện
+        // Hồi nhanh: 50, 75, 100...
+        document.getElementById('speed-cost').innerText = 50 + (sLv - 1) * 25;
+        // Thêm bình: 100, 150, 200...
+        document.getElementById('storage-cost').innerText = 100 + (stLv - 1) * 50;
+
+        // Mở/Khóa nút tưới
+        document.getElementById('btnPour').disabled = (curW <= 0);
+        
+        startRegenLogic(uid, curW, maxW, speed);
+    });
+}
 
     let allPlants = [];
 
@@ -302,14 +322,52 @@ function renderPlant(totalGlobal) {
 }
 
     async function upgrade(type) {
-        const cost = 50;
-        if ((userData.coins || 0) < cost) return alert("Bạn cần 50 đồng xu!");
-        const updates = { coins: firebase.database.ServerValue.increment(-cost) };
-        if (type === 'speed') updates['regenSpeed'] = Math.max(300, (userData.regenSpeed || 3600) - 300);
-        if (type === 'storage') updates['maxWater'] = (userData.maxWater || 3) + 1;
-        await db.ref('users/' + auth.currentUser.uid).update(updates);
-        alert("Nâng cấp thành công!");
+    // 1. Tính toán giá tiền và cấp độ hiện tại
+    const speedLv = userData.speedLevel || 1;
+    const storageLv = userData.storageLevel || 1;
+    
+    let cost = 0;
+    let updates = {};
+
+    if (type === 'speed') {
+        // Giá mặc định 50, mỗi cấp tăng thêm 25 (Lv1: 50, Lv2: 75, Lv3: 100...)
+        cost = 50 + (speedLv - 1) * 25;
+        
+        // Kiểm tra giới hạn: Tối đa thời gian hồi còn 50 giây
+        const currentRegen = userData.regenSpeed || 3600;
+        if (currentRegen <= 50) {
+            return alert("Tốc độ hồi nước đã đạt tối đa rồi Duy ơi!");
+        }
+
+        if ((userData.coins || 0) < cost) return alert(`Duy cần ${cost} xu để nâng cấp Hồi nhanh!`);
+
+        updates['speedLevel'] = firebase.database.ServerValue.increment(1);
+        // Mỗi lần giảm 50 giây, không được thấp hơn 50 giây
+        updates['regenSpeed'] = Math.max(50, currentRegen - 50);
+    } 
+    
+    else if (type === 'storage') {
+        // Giá mặc định 100, mỗi cấp tăng thêm 50 (Lv1: 100, Lv2: 150, Lv3: 200...)
+        cost = 100 + (storageLv - 1) * 50;
+
+        if ((userData.coins || 0) < cost) return alert(`Duy cần ${cost} xu để thêm Bình chứa!`);
+
+        updates['storageLevel'] = firebase.database.ServerValue.increment(1);
+        // Mỗi cấp tăng thêm 1 bình
+        updates['maxWater'] = (userData.maxWater || 3) + 1;
     }
+
+    // 2. Trừ tiền và cập nhật database
+    updates['coins'] = firebase.database.ServerValue.increment(-cost);
+
+    try {
+        await db.ref('users/' + auth.currentUser.uid).update(updates);
+        alert(`Nâng cấp thành công! Mất ${cost} xu.`);
+    } catch(e) {
+        console.error(e);
+        alert("Có lỗi khi nâng cấp Duy ơi!");
+    }
+}
 </script>
 </body>
 </html>
