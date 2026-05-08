@@ -19,15 +19,15 @@
         :root { --primary: #2e7d32; --bg: #f1f8e9; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; overflow-x: hidden; }
         .container { max-width: 500px; margin: auto; padding: 20px; text-align: center; }
-        h1 { font-family: 'Luckiest Guy'; color: var(--primary); }
+        h1 { font-family: 'Luckiest Guy'; color: var(--primary); margin-bottom: 10px; }
         
-        #video-container { position: relative; width: 100%; border-radius: 20px; overflow: hidden; background: #000; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-        video { width: 100%; height: auto; transform: scaleX(-1); } /* Quay gương cho dễ nhìn */
+        #video-container { position: relative; width: 100%; border-radius: 20px; overflow: hidden; background: #000; box-shadow: 0 10px 20px rgba(0,0,0,0.2); line-height: 0; }
+        video { width: 100%; height: auto; transform: scaleX(-1); }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
 
         .counter-box { display: flex; justify-content: space-around; margin: 20px 0; }
         .stat-card { background: white; padding: 15px; border-radius: 15px; flex: 1; margin: 0 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .stat-value { font-family: 'Luckiest Guy'; font-size: 35px; color: #333; }
+        .stat-value { font-family: 'Luckiest Guy'; font-size: 35px; color: #333; transition: 0.2s; }
         .stat-label { font-size: 12px; color: #888; }
 
         .btn-control {
@@ -35,7 +35,7 @@
             border-radius: 50px; font-family: 'Luckiest Guy'; font-size: 18px;
             cursor: pointer; width: 100%; box-shadow: 0 5px 0 #1b5e20;
         }
-        #status { margin-top: 10px; font-style: italic; color: #666; font-size: 14px; }
+        #status { margin-top: 10px; font-weight: bold; color: #2e7d32; font-size: 14px; min-height: 20px; }
     </style>
 </head>
 <body>
@@ -48,6 +48,8 @@
         <canvas id="output_canvas"></canvas>
     </div>
 
+    <div id="status">Đang khởi tạo AI...</div>
+
     <div class="counter-box">
         <div class="stat-card">
             <div class="stat-value" id="pushup-count">0</div>
@@ -58,8 +60,6 @@
             <div class="stat-label">XU NHẬN ĐƯỢC</div>
         </div>
     </div>
-
-    <p id="status">Đang khởi tạo AI... Vui lòng đợi</p>
 
     <button class="btn-control" style="background: #888; box-shadow: 0 5px 0 #666;" onclick="goBack()">QUAY LẠI</button>
 </div>
@@ -84,51 +84,99 @@
     
     let count = 0;
     let coins = 0;
-    let stage = "up"; // Trạng thái: "up" (đang ở trên) hoặc "down" (đang hạ xuống)
+    let stage = "up"; 
+    let detector;
 
     async function setupCamera() {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
         video.srcObject = stream;
         return new Promise((resolve) => {
-            video.onloadedmetadata = () => resolve(video);
+            video.onloadedmetadata = () => {
+                canvasElement.width = video.videoWidth;
+                canvasElement.height = video.videoHeight;
+                resolve(video);
+            };
         });
     }
 
-    async function main() {
-        await setupCamera();
-        const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet);
-        document.getElementById('status').innerText = "Hãy đặt điện thoại sao cho thấy rõ toàn thân nghiêng!";
+    function calculateAngle(A, B, C) {
+        let radians = Math.atan2(C.y - B.y, C.x - B.x) - Math.atan2(A.y - B.y, A.x - B.x);
+        let angle = Math.abs(radians * 180.0 / Math.PI);
+        if (angle > 180.0) angle = 360 - angle;
+        return angle;
+    }
 
-        async function detect() {
-            const poses = await detector.estimatePoses(video);
+    async function main() {
+        try {
+            await setupCamera();
+            detector = await poseDetection.createDetector(poseDetection.SupportedModels.BlazePose, {
+                runtime: 'tfjs',
+                modelType: 'full'
+            });
+            document.getElementById('status').innerText = "Sẵn sàng! Hãy đứng nghiêng người.";
+            detect(); 
+        } catch (err) {
+            document.getElementById('status').innerText = "Lỗi Camera hoặc AI!";
+            console.error(err);
+        }
+    }
+
+    async function detect() {
+        const poses = await detector.estimatePoses(video);
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+        if (poses.length > 0) {
+            const keypoints = poses[0].keypoints;
             
-            if (poses.length > 0) {
-                const keypoints = poses[0].keypoints;
-                // Lấy tọa độ vai và khuỷu tay để tính toán
-                const leftShoulder = keypoints.find(k => k.name === 'left_shoulder');
-                const leftElbow = keypoints.find(k => k.name === 'left_elbow');
+            // Vẽ điểm để Duy biết AI đang hoạt động
+            keypoints.forEach(kp => {
+                if (kp.score > 0.5) {
+                    canvasCtx.fillStyle = "#4caf50";
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(kp.x, kp.y, 4, 0, 2 * Math.PI);
+                    canvasCtx.fill();
+                }
+            });
+
+            const getPt = (name) => keypoints.find(k => k.name === name);
+            const lS = getPt('left_shoulder'), lE = getPt('left_elbow'), lW = getPt('left_wrist');
+            const rS = getPt('right_shoulder'), rE = getPt('right_elbow'), rW = getPt('right_wrist');
+
+            let angle = null;
+            if (lS && lE && lW && lS.score > 0.6 && lE.score > 0.6) {
+                angle = calculateAngle(lS, lE, lW);
+            } else if (rS && rE && rW && rS.score > 0.6 && rE.score > 0.6) {
+                angle = calculateAngle(rS, rE, rW);
+            }
+
+            if (angle !== null) {
+                document.getElementById('status').innerText = `Góc tay: ${Math.floor(angle)}° - ${stage === 'up' ? 'HẠ NGƯỜI XUỐNG' : 'ĐẨY NGƯỜI LÊN'}`;
+
+                if (angle <= 100) { 
+                    stage = "down";
+                }
                 
-                if (leftShoulder && leftElbow && leftShoulder.score > 0.5) {
-                    // Logic đếm đơn giản: So sánh độ cao Y của vai và khuỷu tay
-                    if (leftShoulder.y > leftElbow.y + 30) {
-                        stage = "down";
-                    }
-                    if (leftShoulder.y < leftElbow.y && stage === "down") {
-                        stage = "up";
-                        count++;
-                        coins += 2;
-                        updateUI();
-                        saveToFirebase(2);
-                    }
+                if (angle >= 155 && stage === "down") { 
+                    stage = "up";
+                    count++;
+                    coins += 2;
+                    updateUI();
+                    saveToFirebase(2);
+                    
+                    // Hiệu ứng nháy xanh
+                    document.getElementById('video-container').style.outline = "5px solid #4caf50";
+                    setTimeout(() => document.getElementById('video-container').style.outline = "none", 300);
                 }
             }
-            requestAnimationFrame(detect);
         }
-        detect();
+        requestAnimationFrame(detect);
     }
 
     function updateUI() {
-        document.getElementById('pushup-count').innerText = count;
+        const cEl = document.getElementById('pushup-count');
+        cEl.innerText = count;
+        cEl.style.transform = "scale(1.3)";
+        setTimeout(() => cEl.style.transform = "scale(1)", 200);
         document.getElementById('coins-earned').innerText = coins;
     }
 
@@ -140,7 +188,7 @@
     }
 
     function goBack() {
-        if (confirm(`Bạn đã hít đất được ${count} lần và nhận ${coins} xu. Quay lại vườn nhé?`)) {
+        if (confirm(`Bạn hít được ${count} cái và nhận ${coins} xu. Thoát nhé?`)) {
             location.href = 'tasks.html';
         }
     }
