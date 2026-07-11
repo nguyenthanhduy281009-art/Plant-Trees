@@ -8,7 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --primary: #2e7d32; } /* Màu xanh lá đậm cho đúng chất trồng cây */
+        :root { --primary: #2e7d32; } 
         body { font-family: sans-serif; background: #1a1a1a; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .box { background: #222; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); width: 320px; text-align: center; color: white; }
         .brand-name { font-size: 32px; font-weight: 900; margin-bottom: 5px; background: linear-gradient(45deg, #2e7d32, #66bb6a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 1px; }
@@ -28,14 +28,12 @@
     <div class="brand-name">PLANTREES</div>
     <h2 id="title">ĐĂNG NHẬP</h2>
     
-    <!-- Đổi placeholder cho phù hợp chủ đề -->
     <input type="text" id="username" placeholder="Tên người làm vườn (Duy nhất)" style="display: none;">
-    
     <input type="email" id="email" placeholder="Email của bạn">
     
     <div class="input-group">
         <input type="password" id="pass" placeholder="Mật khẩu">
-        <button class="show-btn" onclick="togglePass()">HIỆN</button>
+        <button class="show-btn" onclick="togglePass(event)">HIỆN</button>
     </div>
 
     <a class="forgot" id="forgotBtn" onclick="forgotPass()">Quên mật khẩu?</a>
@@ -48,7 +46,6 @@
 </div>
 
 <script>
-// Cập nhật lại Config của Plantrees
 const firebaseConfig = {
     apiKey: "AIzaSyAASOFywyAkx2G7ubR_XsODI1U2x7mSMpE",
     authDomain: "plantrees-b1d99.firebaseapp.com",
@@ -65,7 +62,7 @@ const db = firebase.database();
 
 let isLogin = true;
 
-function togglePass() {
+function togglePass(event) {
     const p = document.getElementById("pass");
     p.type = p.type === "password" ? "text" : "password";
     event.target.innerText = p.type === "password" ? "HIỆN" : "ẨN";
@@ -82,47 +79,62 @@ function switchMode() {
 }
 
 async function forgotPass() {
-    const email = document.getElementById("email").value;
+    const email = document.getElementById("email").value.trim();
     if (!email) return alert("Vui lòng nhập Email!");
     try {
         await auth.sendPasswordResetEmail(email);
-        alert("Link đặt lại mật khẩu đã được gửi!");
+        alert("Link đặt lại mật khẩu đã được gửi vào Email!");
     } catch (e) { alert("Lỗi: " + e.message); }
 }
 
 async function handleAuth() {
     const email = document.getElementById("email").value.trim();
-    const pass = document.getElementById("pass").value;
+    const pass = document.getElementById("pass");
     const nickname = document.getElementById("username").value.trim();
     const err = document.getElementById("error");
     
-    if(!email || !pass || (!isLogin && !nickname)) return err.innerText = "Điền đầy đủ thông tin!";
+    if(!email || !pass.value || (!isLogin && !nickname)) return err.innerText = "Điền đầy đủ thông tin!";
     err.innerText = "Đang xử lý...";
 
     try {
         if (isLogin) {
-            await auth.signInWithEmailAndPassword(email, pass);
+            // Logic Đăng nhập
+            await auth.signInWithEmailAndPassword(email, pass.value);
             window.location.href = "index.html";
         } else {
+            // Logic Đăng ký
             if (nickname.length < 3) return err.innerText = "Tên ít nhất 3 ký tự!";
 
-            const res = await auth.createUserWithEmailAndPassword(email, pass);
-            
+            // BƯỚC CẢI TIẾN: Kiểm tra trùng tên TRƯỚC khi tạo user auth
             const nameCheck = await db.ref('users').orderByChild('name').equalTo(nickname).once('value');
             if (nameCheck.exists()) {
-                await res.user.delete();
-                return err.innerText = "Tên này đã có người dùng!";
+                return err.innerText = "Tên người làm vườn này đã có người dùng!";
             }
 
+            // Tiến hành tạo tài khoản sau khi kiểm tra hợp lệ
+            const res = await auth.createUserWithEmailAndPassword(email, pass.value);
             await res.user.updateProfile({ displayName: nickname });
             
-            // Thay đổi các trường dữ liệu cho game trồng cây
+            // Khởi tạo data chuẩn 3 bình nước + kích hoạt thời gian Server chạy chuẩn xác
             await db.ref('users/' + res.user.uid).set({
                 name: nickname,
                 email: email,
-                waterLevel: 0, // Mức nước tưới
-                treeLevel: 1,  // Cấp độ cây
-                createdAt: Date.now()
+                avatarUrl: "https://cdn-icons-png.flaticon.com/512/4333/4333609.png",
+                coins: 0,
+                
+                // Cấu hình nước của người chơi mới
+                currentWater: 3, 
+                maxWater: 3,     
+                
+                // Các chỉ số nâng cấp cơ bản
+                regenSpeed: 3600,
+                speedLevel: 1,
+                storageLevel: 1,
+                waterLevel: 0,
+                
+                // Khởi tạo mốc thời gian bằng TIMESTAMP Server để đồng hồ chạy lập tức khi vào game
+                lastRegenTime: firebase.database.ServerValue.TIMESTAMP,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
             });
 
             alert("Chào mừng người làm vườn " + nickname + "!");
@@ -132,7 +144,6 @@ async function handleAuth() {
         err.innerText = e.message; 
     }
 }
-    <script src="init-user.js"></script>
 </script>
 </body>
 </html>
