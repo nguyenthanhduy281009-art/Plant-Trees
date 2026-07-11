@@ -318,22 +318,44 @@ function renderPlant(totalGlobal) {
 
     function startRegenLogic(uid, curW, maxW, speed) {
         if (regenInterval) clearInterval(regenInterval);
+        
+        // SỬA LỖI ACC MỚI: Nếu chưa có thời gian gốc trong DB, khởi tạo ngay lập tức
+        if (!userData.lastRegenTime) {
+            db.ref('users/' + uid).update({ lastRegenTime: Date.now() });
+            return;
+        }
+
         regenInterval = setInterval(() => {
             const now = Date.now();
-            const lastUpdate = userData.lastRegenTime || now;
+            const lastUpdate = userData.lastRegenTime;
             const elapsed = Math.floor((now - lastUpdate) / 1000);
+
             if (curW < maxW) {
-                if (elapsed >= speed) {
-                    db.ref('users/' + uid).update({ currentWater: Math.min(maxW, curW + 1), lastRegenTime: now });
+                // SỬA LỖI TẮT WEB: Tính toán xem đã tích lũy được bao nhiêu giọt nước khi offline
+                const waterGained = Math.floor(elapsed / speed);
+                
+                if (waterGained > 0) {
+                    const newWater = Math.min(maxW, curW + waterGained);
+                    // Giữ lại số giây thừa chưa đủ 1 giọt thay vì xóa sạch (reset về now)
+                    const nextRegenTime = lastUpdate + (waterGained * speed * 1000);
+                    
+                    db.ref('users/' + uid).update({ 
+                        currentWater: newWater, 
+                        lastRegenTime: nextRegenTime 
+                    });
+                    return; 
                 }
+
+                // Hiển thị đồng hồ đếm ngược chính xác từng giây còn lại
                 const remaining = speed - (elapsed % speed);
                 const m = Math.floor(remaining / 60);
                 const s = remaining % 60;
                 document.getElementById('regen-text').innerText = `Hồi nước sau: ${m}:${s < 10 ? '0'+s : s}`;
-            } else { document.getElementById('regen-text').innerText = "Bình nước đã đầy ✨"; }
+            } else { 
+                document.getElementById('regen-text').innerText = "Bình nước đã đầy ✨"; 
+            }
         }, 1000);
     }
-
    async function pourWater() {
     const uid = auth.currentUser.uid;
     const btn = document.getElementById('btnPour');
